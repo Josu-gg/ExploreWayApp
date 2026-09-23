@@ -1,0 +1,56 @@
+
+# Compilación de .NET
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+[Aa]rtifacts/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+*.sln.ide
+
+# Extensiones y herramientas de Visual Studio
+.vscode/
+*.code-workspace
+
+# Archivos temporales
+[Tt]emp/
+[Tt]mp/
+*.tmp
+*.log
+
+# Configuración local y secretos
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.Development.local.json
+secrets.json
+
+# Publicación
+publish/
+*.publishsettings
+*.pubxml.user
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Cobertura de pruebas
+[Tt]est[Rr]esult*/
+coverage/
+
+# Archivos generados por herramientas
+Generated/
