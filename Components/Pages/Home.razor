@@ -1,7 +1,210 @@
 ﻿@page "/"
+@using MudBlazor
 
-<PageTitle>Home</PageTitle>
+<div id="inicio" class="exploreway-home">
+    @* HERO SECTION *@
+    <section class="exploreway-hero py-16 py-md-24 position-relative">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+            <MudGrid AlignItems="AlignItems.Center" Spacing="6">
+                <MudItem xs="12" md="7">
+                    <div class="d-inline-flex align-center gap-2 px-4 py-2 rounded-pill mb-4 exploreway-badge">
+                        <MudIcon Icon="@Icons.Material.Filled.Hiking" Size="Size.Small" Style="color: #00A86B;" />
+                        <span class="font-weight-bold" style="color: #00A86B; font-size: 0.875rem;">
+                            Temporada de Aventuras 2026 Abierta
+                        </span>
+                    </div>
 
-<h1>Hello, world!</h1>
+                    <MudText Typo="Typo.h2" Class="font-weight-extrabold exploreway-hero-title mb-4">
+                        Descubre el mundo a tu manera con 
+                        <span class="exploreway-gradient-text">ExploreWay</span>
+                    </MudText>
 
-Welcome to your new app.
+                    <MudText Typo="Typo.body1" Class="mb-8" Style="font-size: 1.15rem; color: #475569; line-height: 1.7;">
+                        Gestiona tus expediciones, rutas de trekking, buceo en arrecifes y escapadas ecoturísticas con guías locales certificados y máxima seguridad.
+                    </MudText>
+
+                    <div class="d-flex flex-wrap gap-4 align-center mb-8">
+                        <MudButton Variant="Variant.Filled" 
+                                   Size="Size.Large"
+                                   Class="rounded-pill px-8 py-3 exploreway-btn-primary"
+                                   Href="#destinos"
+                                   StartIcon="@Icons.Material.Filled.Explore">
+                            Explorar Destinos
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" 
+                                   Size="Size.Large"
+                                   Class="rounded-pill px-8 py-3 exploreway-btn-secondary"
+                                   Href="#reserva"
+                                   StartIcon="@Icons.Material.Filled.CalendarMonth">
+                            Reservar Aventura
+                        </MudButton>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-8 pt-4">
+                        <div>
+                            <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color: #00A86B;">+180</MudText>
+                            <MudText Typo="Typo.caption" Class="text-secondary">Rutas Activas</MudText>
+                        </div>
+                        <div>
+                            <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color: #5BBAE3;">14k+</MudText>
+                            <MudText Typo="Typo.caption" Class="text-secondary">Aventureros</MudText>
+                        </div>
+                        <div>
+                            <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color: #67BECB;">4.9 / 5</MudText>
+                            <MudText Typo="Typo.caption" Class="text-secondary">Calificación Guías</MudText>
+                        </div>
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12" md="5" Class="d-flex justify-center">
+                    <div class="exploreway-hero-card shadow-xl rounded-2xl overflow-hidden position-relative">
+                        <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1000&q=80" 
+                             alt="ExploreWay Aventura" 
+                             class="exploreway-hero-img" />
+                        <div class="exploreway-hero-card-overlay pa-6">
+                            <MudChip T="string" Size="Size.Small" Class="mb-2" Style="background: #00A86B; color: white;">
+                                Aventura del Mes
+                            </MudChip>
+                            <MudText Typo="Typo.h6" Class="text-white font-weight-bold">
+                                Expedición Parque Nacional Fitz Roy
+                            </MudText>
+                            <MudText Typo="Typo.body2" Class="text-white-70">
+                                7 días · Trekking Nivel Moderado · Guía Certificado
+                            </MudText>
+                        </div>
+                    </div>
+                </MudItem>
+            </MudGrid>
+        </MudContainer>
+    </section>
+
+    @* BARRA DE RESERVA RÁPIDA *@
+    <section id="reserva" class="py-8">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+            <MudPaper Elevation="4" Class="pa-6 pa-md-8 rounded-2xl exploreway-booking-bar">
+                <MudText Typo="Typo.h5" Class="font-weight-bold mb-1" Style="color: #00A86B;">
+                    Reserva tu Próxima Experiencia
+                </MudText>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-4">
+                    Selecciona tu destino y consulta disponibilidad de cupos en tiempo real.
+                </MudText>
+                <MudGrid Spacing="3" AlignItems="AlignItems.Center">
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudSelect T="string" Label="Destino" @bind-Value="_selectedDestination" Variant="Variant.Outlined">
+                            <MudSelectItem Value="@("Patagonia Chilena")">Patagonia Chilena</MudSelectItem>
+                            <MudSelectItem Value="@("Costa Rica Ecotours")">Costa Rica Ecotours</MudSelectItem>
+                            <MudSelectItem Value="@("Alpes Suizos Senderismo")">Alpes Suizos Senderismo</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudSelect T="string" Label="Modalidad" @bind-Value="_selectedType" Variant="Variant.Outlined">
+                            <MudSelectItem Value="@("Trekking & Montaña")">Trekking & Montaña</MudSelectItem>
+                            <MudSelectItem Value="@("Buceo & Océanos")">Buceo & Océanos</MudSelectItem>
+                            <MudSelectItem Value="@("Glamping de Lujo")">Glamping de Lujo</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudDatePicker Label="Fecha Estimada" @bind-Date="_selectedDate" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudButton Variant="Variant.Filled"
+                                   FullWidth="true"
+                                   Size="Size.Large"
+                                   Class="rounded-lg py-3 exploreway-btn-primary"
+                                   OnClick="ConsultarDisponibilidad"
+                                   StartIcon="@Icons.Material.Filled.Search">
+                            Ver Cupos
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudContainer>
+    </section>
+
+    @* CATÁLOGO DE DESTINOS *@
+    <section id="destinos" class="py-16">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+            <div class="text-center mb-10">
+                <MudText Typo="Typo.h3" Class="font-weight-bold mb-2">Destinos Destacados</MudText>
+                <MudText Typo="Typo.body1" Class="text-secondary">Rutas seleccionadas con soporte y seguridad total.</MudText>
+            </div>
+            <MudGrid Spacing="4">
+                @foreach (var tour in _toursDestacados)
+                {
+                    <MudItem xs="12" sm="6" md="4" key="@tour.Titulo">
+                        <MudCard Elevation="2" Class="exploreway-card h-100 rounded-2xl overflow-hidden">
+                            <MudCardMedia Image="@tour.Imagen" Height="220" />
+                            <MudCardContent Class="pa-5">
+                                <div class="d-flex justify-space-between align-center mb-2">
+                                    <span class="text-xs font-weight-bold" style="color: #00A86B;">@tour.Categoria</span>
+                                    <span class="font-weight-bold" style="color: #00A86B;">@tour.Precio</span>
+                                </div>
+                                <MudText Typo="Typo.h6" Class="font-weight-bold mb-2">@tour.Titulo</MudText>
+                                <MudText Typo="Typo.body2" Class="text-secondary mb-4">@tour.Descripcion</MudText>
+                            </MudCardContent>
+                            <MudCardActions Class="px-5 pb-5 pt-0">
+                                <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" Class="rounded-lg text-capitalize">
+                                    Ver Itinerario
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudContainer>
+    </section>
+
+    @* SECCIÓN SOBRE NOSOTROS *@
+    <section id="nosotros" class="py-16 bg-white">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+            <MudGrid Spacing="6" AlignItems="AlignItems.Center">
+                <MudItem xs="12" md="6">
+                    <img src="https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=1000&q=80" 
+                         alt="Sobre Nosotros" 
+                         class="rounded-2xl shadow-lg w-100" 
+                         style="max-height: 420px; object-fit: cover;" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.h3" Class="font-weight-bold mb-4">
+                        Apasionados por la Aventura y el Turismo Responsable
+                    </MudText>
+                    <MudText Typo="Typo.body1" Class="text-secondary mb-4" Style="line-height: 1.7;">
+                        En <strong>ExploreWay</strong> conectamos personas con la naturaleza más pura, promoviendo el ecoturismo con guías certificados en primeros auxilios remotos y huella de carbono neutral.
+                    </MudText>
+                    <MudButton Variant="Variant.Filled" Class="rounded-pill px-8 py-3 exploreway-btn-primary" Href="#destinos">
+                        Conoce a Nuestro Equipo
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudContainer>
+    </section>
+</div>
+
+@code {
+    private string _selectedDestination = "Patagonia Chilena";
+    private string _selectedType = "Trekking & Montaña";
+    private DateTime? _selectedDate = DateTime.Today.AddDays(14);
+
+    @inject ISnackbar Snackbar
+
+    public class TourCardModel
+    {
+        public string Titulo { get; set; } = "";
+        public string Categoria { get; set; } = "";
+        public string Descripcion { get; set; } = "";
+        public string Imagen { get; set; } = "";
+        public string Precio { get; set; } = "";
+    }
+
+    private List<TourCardModel> _toursDestacados = new()
+    {
+        new TourCardModel { Titulo = "Glaciar Perito Moreno", Categoria = "Trekking & Hielo", Descripcion = "Caminata sobre hielo milenario y navegación por témpanos.", Imagen = "https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=800&q=80", Precio = "$380 USD" },
+        new TourCardModel { Titulo = "Arrecifes del Caribe", Categoria = "Buceo Marino", Descripcion = "Exploración de corales y cenotes sagrados.", Imagen = "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80", Precio = "$290 USD" },
+        new TourCardModel { Titulo = "Santuario Volcánico", Categoria = "Ecoturismo", Descripcion = "Caminatas en la selva nubosa y aguas termales.", Imagen = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80", Precio = "$220 USD" }
+    };
+
+    private void ConsultarDisponibilidad()
+    {
+        Snackbar.Add($"Buscando cupos para {_selectedDestination}...", Severity.Success);
+    }
+}
