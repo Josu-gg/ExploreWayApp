@@ -1,0 +1,78 @@
+﻿@page "/login"
+@layout ExploreWayApp.Components.Layout.MainLayout
+@using ExploreWayApp.DTOs.Auth
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios
+@inject IAuthService AuthService
+@inject NavigationManager Navegacion
+
+<PageTitle>Iniciar sesión — ExploreWay</PageTitle>
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h3 class="mb-4">Iniciar sesión</h3>
+
+                <EditForm Model="credenciales" OnValidSubmit="EnviarAsync" FormName="login">
+                    <DataAnnotationsValidator />
+
+                    @if (error is not null)
+                    {
+                        <div class="alert alert-danger">@error</div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label" for="correo">Correo</label>
+                        <InputText id="correo" class="form-control" @bind-Value="credenciales.Correo" autocomplete="username" />
+                        <ValidationMessage For="() => credenciales.Correo" class="text-danger small" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="contra">Contraseña</label>
+                        <InputText id="contra" type="password" class="form-control" @bind-Value="credenciales.Contra" autocomplete="current-password" />
+                        <ValidationMessage For="() => credenciales.Contra" class="text-danger small" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" disabled="@enviando">
+                        @(enviando ? "Ingresando..." : "Ingresar")
+                    </button>
+                </EditForm>
+
+                <p class="text-center mt-3 mb-0">
+                    ¿No tenés cuenta? <a href="/registro">Registrate</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly LoginGuardar credenciales = new();
+    private string? error;
+    private bool enviando;
+
+    private async Task EnviarAsync()
+    {
+        enviando = true;
+        error = null;
+
+        try
+        {
+            await AuthService.IniciarSesionAsync(credenciales);
+            Navegacion.NavigateTo("/");
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá que la API esté en ejecución.";
+        }
+        finally
+        {
+            enviando = false;
+        }
+    }
+}
