@@ -4,70 +4,62 @@
 @inject NavigationManager NavManager
 
 @* Proveedores globales de MudBlazor con la paleta ExploreWay *@
-<MudThemeProvider Theme="_exploreWayTheme" />
+<MudThemeProvider Theme="TemaExploreWay.Instancia" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 <MudPopoverProvider />
 
 <MudLayout Class="exploreway-layout">
-    @* HEADER / APPBAR RESPONSIVO *@
-    <MudAppBar Elevation="1" Dense="false" Class="exploreway-appbar px-4 px-md-8">
-        @* Logotipo e Identidad *@
-        <a href="#inicio" class="d-flex align-center cursor-pointer text-decoration-none">
+
+    @* APPBAR ADAPTATIVA — TRANSPARENTE SOBRE EL HERO, SÓLIDA AL BAJAR *@
+    <MudAppBar Elevation="0" Dense="false" Class="exploreway-appbar px-4 px-md-8">
+        <a href="#inicio" class="exploreway-brand d-flex align-center text-decoration-none">
             <div class="exploreway-logo-badge mr-3">
-                <MudIcon Icon="@Icons.Material.Filled.Explore" Size="Size.Medium" Style="color: #00A86B;" />
+                <MudIcon Icon="@Icons.Material.Filled.Explore" Size="Size.Medium" />
             </div>
-            <div>
-                <MudText Typo="Typo.h5" Class="exploreway-brand-title font-weight-bold">
-                    Explore<span style="color: #00A86B;">Way</span>
-                </MudText>
-            </div>
+            <MudText Typo="Typo.h5" Class="font-weight-bold exploreway-brand-title">
+                Explore<span class="exploreway-brand-way">Way</span>
+            </MudText>
+            <span class="exploreway-brand-coords d-none d-lg-inline">S 50.9° W 73.0°</span>
         </a>
 
         <MudSpacer />
 
-        @* Menú Principal en Header (Sin buscador) *@
-        <div class="d-none d-md-flex align-center gap-6">
-            <MudLink Href="#inicio" Underline="Underline.None" Class="exploreway-navlink active">Inicio</MudLink>
-            <MudLink Href="#destinos" Underline="Underline.None" Class="exploreway-navlink">Destinos</MudLink>
-            <MudLink Href="#reserva" Underline="Underline.None" Class="exploreway-navlink">Reserva</MudLink>
-            <MudLink Href="#nosotros" Underline="Underline.None" Class="exploreway-navlink">Sobre Nosotros</MudLink>
-        </div>
+        <nav class="exploreway-nav d-none d-md-flex align-center" aria-label="Secciones de la página">
+            <a href="#inicio" class="exploreway-navlink active" data-section-link="inicio">Inicio</a>
+            <a href="#destinos" class="exploreway-navlink" data-section-link="destinos">Destinos</a>
+            <a href="#nosotros" class="exploreway-navlink" data-section-link="nosotros">Nosotros</a>
+            <span class="exploreway-nav-pill" aria-hidden="true"></span>
+        </nav>
 
         <MudSpacer />
 
-        @* Botones de Inicio de Sesión y Registro *@
         <div class="d-none d-sm-flex align-center gap-3">
-            <MudButton Variant="Variant.Outlined" 
+            <MudButton Variant="Variant.Outlined"
                        Href="/login"
-                       OnClick="IrALogin"
-                       Class="rounded-pill px-5 py-2 text-capitalize"
-                       Style="border-color: #00A86B; color: #00A86B; font-weight: 600;">
+                       Class="rounded-pill px-5 py-2 text-none exploreway-btn-session">
                 Iniciar Sesión
             </MudButton>
 
-            <MudButton Variant="Variant.Filled" 
+            <MudButton Variant="Variant.Filled"
                        Href="/registro"
-                       OnClick="AbrirModalRegistro"
-                       Class="rounded-pill px-5 py-2 text-capitalize exploreway-btn-cta"
-                       Style="background: linear-gradient(135deg, #00A86B, #5BBAE3); font-weight: 600; color: #ffffff;">
+                       Class="rounded-pill px-5 py-2 text-none exploreway-btn-cta">
                 Registrarse
             </MudButton>
         </div>
 
-        @* Botón Hamburguesa para Móviles *@
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" 
-                       Color="Color.Default" 
-                       Edge="Edge.End" 
-                       Class="d-flex d-md-none ml-2" 
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Default"
+                       Edge="Edge.End"
+                       Class="d-flex d-md-none ml-2 exploreway-hamburger"
                        OnClick="@ToggleDrawer" />
     </MudAppBar>
 
     @* DRAWER MÓVIL *@
-    <MudDrawer @bind-Open="_drawerOpen" 
-               ClipMode="DrawerClipMode.Never" 
-               Elevation="3" 
-               Anchor="Anchor.Right" 
+    <MudDrawer @bind-Open="_drawerOpen"
+               ClipMode="DrawerClipMode.Never"
+               Elevation="3"
+               Anchor="Anchor.Right"
                Variant="DrawerVariant.Temporary"
                Class="exploreway-drawer pa-4">
 
@@ -79,8 +71,8 @@
                 </MudText>
             </div>
 
-            <MudIconButton Icon="@Icons.Material.Filled.Close" 
-                           Size="Size.Small" 
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
                            OnClick="@ToggleDrawer" />
         </MudDrawerHeader>
 
@@ -95,10 +87,6 @@
                 Destinos
             </MudNavLink>
 
-            <MudNavLink Href="#reserva" Icon="@Icons.Material.Filled.EventAvailable" OnClick="@CloseDrawer">
-                Reserva
-            </MudNavLink>
-
             <MudNavLink Href="#nosotros" Icon="@Icons.Material.Filled.Groups" OnClick="@CloseDrawer">
                 Sobre Nosotros
             </MudNavLink>
@@ -107,20 +95,19 @@
         <MudDivider Class="my-4" />
 
         <div class="d-flex flex-column gap-3 mt-auto pb-4">
-            <MudButton Variant="Variant.Outlined" 
-                       Color="Color.Primary" 
-                       FullWidth="true" 
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Primary"
+                       FullWidth="true"
                        Href="/login"
-                       Class="rounded-pill py-2 text-capitalize"
+                       Class="rounded-pill py-2 text-none"
                        OnClick="@IrALogin">
                 Iniciar Sesión
             </MudButton>
 
-            <MudButton Variant="Variant.Filled" 
-                       FullWidth="true" 
+            <MudButton Variant="Variant.Filled"
+                       FullWidth="true"
                        Href="/registro"
-                       Class="rounded-pill py-2 text-capitalize"
-                       Style="background: linear-gradient(135deg, #00A86B, #5BBAE3); color: white;"
+                       Class="rounded-pill py-2 text-none exploreway-btn-cta"
                        OnClick="@AbrirModalRegistro">
                 Registrarse
             </MudButton>
@@ -161,7 +148,6 @@
                     <ul class="exploreway-footer-links">
                         <li><a href="#inicio">Inicio</a></li>
                         <li><a href="#destinos">Destinos</a></li>
-                        <li><a href="#reserva">Reserva</a></li>
                         <li><a href="#nosotros">Sobre Nosotros</a></li>
                     </ul>
                 </MudItem>
@@ -186,13 +172,13 @@
                         Recibe nuevas rutas y promociones exclusivas en tu correo.
                     </MudText>
                     <div class="d-flex gap-2">
-                        <MudTextField @bind-Value="_newsletterEmail" 
-                                      Placeholder="tu@correo.com" 
-                                      Variant="Variant.Outlined" 
+                        <MudTextField @bind-Value="_newsletterEmail"
+                                      Placeholder="tu@correo.com"
+                                      Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
                                       Class="exploreway-footer-input" />
-                        <MudButton Variant="Variant.Filled" 
-                                   Style="background: #00A86B; color: white;" 
+                        <MudButton Variant="Variant.Filled"
+                                   Style="background: #00A86B; color: white;"
                                    OnClick="SuscribirNewsletter">
                             Enviar
                         </MudButton>
@@ -219,28 +205,6 @@
 @code {
     private bool _drawerOpen = false;
     private string _newsletterEmail = "";
-
-    // Paleta de colores oficial ExploreWay compatible con todas las versiones de MudBlazor:
-    // #00A86B (Principal Verde), #5BE3C2 (Menta Acento), #5BBAE3 (Cielo Info), #67BECB (Turquesa Suave)
-    private MudTheme _exploreWayTheme = new MudTheme()
-    {
-        PaletteLight = new PaletteLight()
-        {
-            Primary = "#00A86B",
-            Secondary = "#5BE3C2",
-            Info = "#5BBAE3",
-            Success = "#67BECB",
-            AppbarBackground = "rgba(255, 255, 255, 0.95)",
-            AppbarText = "#1e293b",
-            Background = "#f8fafc",
-            Surface = "#ffffff",
-            TextPrimary = "#0f172a",
-            TextSecondary = "#475569",
-            ActionDefault = "#00A86B",
-            DrawerBackground = "#ffffff",
-            DrawerText = "#1e293b"
-        }
-    };
 
     private void ToggleDrawer()
     {

@@ -13,10 +13,16 @@
         public void Iniciar(DTOs.Auth.LoginSalida datos)
         {
             Token = datos.Token;
-            IdUsuario = datos.IdUsuario;
             Correo = datos.Correo;
-            NombreRol = datos.NombreRol;
-            NombreCompleto = $"{datos.Nombre} {datos.Apellido}".Trim();
+            NombreRol = datos.Rol;
+        }
+
+        public void CompletarPerfil(DTOs.Auth.UsuarioActualSalida usuario)
+        {
+            IdUsuario = usuario.IdUsuario;
+            Correo = usuario.Correo;
+            NombreRol = usuario.NombreRol;
+            NombreCompleto = $"{usuario.Nombre} {usuario.Apellido}".Trim();
         }
 
         public void Cerrar()

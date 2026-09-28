@@ -1,25 +1,19 @@
 ﻿using ExploreWayApp.Auth;
 using ExploreWayApp.DTOs.Auth;
 using ExploreWayApp.Excepciones;
-using ExploreWayApp.Auth;
-using ExploreWayApp.DTOs.Auth;
-using ExploreWayApp.Excepciones;
-using ExploreWayApp.Servicios;
 using System.Net;
 using System.Net.Http.Json;
 
-namespace ExploreWay.Web.Servicios;
+namespace ExploreWayApp.Servicios;
 
 public sealed class AuthService(
-    IHttpClientFactory fabrica,
+    HttpClient cliente,
     SesionUsuario sesion,
     ExploreWayAuthStateProvider proveedor) : IAuthService
 {
-    private HttpClient Cliente => fabrica.CreateClient("ExploreWayApi");
-
     public async Task IniciarSesionAsync(LoginGuardar credenciales)
     {
-        var respuesta = await Cliente.PostAsJsonAsync("auth/login", credenciales);
+        var respuesta = await cliente.PostAsJsonAsync("auth/login", credenciales);
 
         if (respuesta.StatusCode == HttpStatusCode.Unauthorized)
         {
@@ -31,12 +25,20 @@ public sealed class AuthService(
                     ?? throw new ApiException(500, "La respuesta del servidor está vacía.");
 
         sesion.Iniciar(datos);
+
+        var respuestaMe = await cliente.GetAsync("auth/me");
+        await ValidarAsync(respuestaMe);
+
+        var usuario = await respuestaMe.Content.ReadFromJsonAsync<UsuarioActualSalida>()
+                      ?? throw new ApiException(500, "No se pudieron obtener los datos del usuario autenticado.");
+
+        sesion.CompletarPerfil(usuario);
         proveedor.Notificar();
     }
 
     public async Task RegistrarClienteAsync(RegistroClienteGuardar datos)
     {
-        var respuesta = await Cliente.PostAsJsonAsync("clientes/registro", datos);
+        var respuesta = await cliente.PostAsJsonAsync("clientes/registro", datos);
         await ValidarAsync(respuesta);
     }
 
@@ -62,6 +64,7 @@ public sealed class AuthService(
             var problema = await respuesta.Content.ReadFromJsonAsync<ErrorApi>();
             if (!string.IsNullOrWhiteSpace(problema?.Message)) return problema.Message;
             if (!string.IsNullOrWhiteSpace(problema?.Detail)) return problema.Detail;
+            if (!string.IsNullOrWhiteSpace(problema?.Error)) return problema.Error;
         }
         catch (Exception) { /* la respuesta no era JSON */ }
 
