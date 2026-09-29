@@ -1,0 +1,297 @@
+@page "/destinos"
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using ExploreWayApp.DTOs.Destino
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Destino
+
+@inject IDestinoService DestinoService
+@inject IDialogService Dialogos
+@inject ISnackbar Snackbar
+
+<PageTitle>Destinos — ExploreWay</PageTitle>
+
+<div class="exploreway-destinos">
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+
+        <AuthorizeView>
+            <NotAuthorized>
+                <div class="exploreway-destinos-vacio">
+                    <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Style="color: var(--ew-primary);" />
+                    <MudText Typo="Typo.h5" Class="font-weight-bold mt-3">Iniciá sesión para gestionar destinos</MudText>
+                    <MudText Typo="Typo.body2" Class="mb-5" Style="color: #64748b;">
+                        Esta sección es solo para usuarios autenticados.
+                    </MudText>
+                    <MudButton Variant="Variant.Filled" Href="/login" Class="rounded-pill px-6 text-none exploreway-btn-auth">
+                        Iniciar sesión
+                    </MudButton>
+                </div>
+            </NotAuthorized>
+
+            <Authorized Context="_auth">
+                @* ENCABEZADO *@
+                <header class="exploreway-destinos-head">
+                    <div>
+                        <span class="exploreway-destinos-kicker">Catálogo · @_destinos.Count registrados</span>
+                        <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Destinos</MudText>
+                        <MudText Typo="Typo.body1" Class="exploreway-section-lead">
+                            Administrá los lugares que ExploreWay ofrece en sus expediciones.
+                        </MudText>
+                    </div>
+                    <MudButton Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               Class="rounded-pill px-6 py-2 text-none exploreway-btn-auth"
+                               Disabled="cargando"
+                               OnClick="NuevoAsync">
+                        Nuevo destino
+                    </MudButton>
+                </header>
+
+                @* BARRA DE FILTROS *@
+                <div class="exploreway-destinos-filtros">
+                    <MudTextField @bind-Value="_busqueda"
+                                  Placeholder="Buscar por nombre, departamento o municipio"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  AdornmentColor="Color.Primary"
+                                  Immediate="true"
+                                  Clearable="true"
+                                  Class="exploreway-destinos-buscar" />
+
+                    <MudChipSet T="int?" @bind-SelectedValue="_filtroEstado" SelectionMode="SelectionMode.SingleSelection"
+                                CheckMark="false" Class="exploreway-destinos-chips">
+                        <MudChip T="int?" Value="@((int?)null)" Default="true" Variant="Variant.Outlined" Color="Color.Primary">
+                            Todos
+                        </MudChip>
+                        @foreach (var estado in _estados)
+                        {
+                            <MudChip T="int?" Value="@estado.IdEstado" Variant="Variant.Outlined" Color="Color.Primary">
+                                @estado.NombreEstado
+                            </MudChip>
+                        }
+                    </MudChipSet>
+                </div>
+
+                @if (error is not null)
+                {
+                    <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;"
+                              ContentAlignment="HorizontalAlignment.Start">
+                        <div class="d-flex align-center justify-space-between flex-wrap gap-3">
+                            <span>@error</span>
+                            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error"
+                                       Class="text-none" OnClick="CargarAsync">
+                                Reintentar
+                            </MudButton>
+                        </div>
+                    </MudAlert>
+                }
+
+                @* TABLA *@
+                <MudTable Items="Filtrados"
+                          Loading="cargando"
+                          LoadingProgressColor="Color.Primary"
+                          Hover="true"
+                          Breakpoint="Breakpoint.Sm"
+                          Elevation="0"
+                          RowsPerPage="10"
+                          Class="exploreway-destinos-tabla">
+                    <HeaderContent>
+                        <MudTh><MudTableSortLabel T="DestinoSalidaDto" SortBy="d => d.Nombre" InitialDirection="SortDirection.Ascending">Destino</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel T="DestinoSalidaDto" SortBy="d => d.Departamento">Ubicación</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel T="DestinoSalidaDto" SortBy="d => d.NombreEstado">Estado</MudTableSortLabel></MudTh>
+                        <MudTh Style="text-align: right;">Acciones</MudTh>
+                    </HeaderContent>
+
+                    <RowTemplate>
+                        <MudTd DataLabel="Destino">
+                            <div class="exploreway-destinos-nombre">@context.Nombre</div>
+                            @if (!string.IsNullOrWhiteSpace(context.Descripcion))
+                            {
+                                <div class="exploreway-destinos-desc" title="@context.Descripcion">@context.Descripcion</div>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Ubicación">
+                            <div class="d-flex align-center gap-1">
+                                <MudIcon Icon="@Icons.Material.Outlined.Place" Size="Size.Small" Style="color: var(--ew-primary);" />
+                                <span>@Ubicacion(context)</span>
+                            </div>
+                        </MudTd>
+                        <MudTd DataLabel="Estado">
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                     Color="@ColorEstado(context.NombreEstado)" Class="ma-0">
+                                @(context.NombreEstado ?? $"Estado {context.IdEstado}")
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Acciones" Style="text-align: right; white-space: nowrap;">
+                            <MudTooltip Text="Editar">
+                                <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small" Color="Color.Primary"
+                                               aria-label="@($"Editar {context.Nombre}")"
+                                               OnClick="@(() => EditarAsync(context))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Eliminar">
+                                <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"
+                                               aria-label="@($"Eliminar {context.Nombre}")"
+                                               OnClick="@(() => EliminarAsync(context))" />
+                            </MudTooltip>
+                        </MudTd>
+                    </RowTemplate>
+
+                    <NoRecordsContent>
+                        <div class="exploreway-destinos-vacio">
+                            <MudIcon Icon="@Icons.Material.Outlined.TravelExplore" Size="Size.Large" Style="color: var(--ew-teal);" />
+                            @if (_destinos.Count == 0)
+                            {
+                                <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">Todavía no hay destinos</MudText>
+                                <MudText Typo="Typo.body2" Style="color: #64748b;">Creá el primero con el botón “Nuevo destino”.</MudText>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">Sin resultados</MudText>
+                                <MudText Typo="Typo.body2" Style="color: #64748b;">Ningún destino coincide con los filtros aplicados.</MudText>
+                            }
+                        </div>
+                    </NoRecordsContent>
+
+                    <LoadingContent>
+                        <MudText Typo="Typo.body2" Class="pa-6" Style="color: #64748b;">Cargando destinos…</MudText>
+                    </LoadingContent>
+
+                    <PagerContent>
+                        <MudTablePager RowsPerPageString="Filas por página:"
+                                       InfoFormat="{first_item}-{last_item} de {all_items}"
+                                       PageSizeOptions="new[] { 10, 25, 50 }" />
+                    </PagerContent>
+                </MudTable>
+            </Authorized>
+        </AuthorizeView>
+    </MudContainer>
+</div>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> EstadoAuth { get; set; } = default!;
+
+    private List<DestinoSalidaDto> _destinos = [];
+    private List<EstadoSalidaDto> _estados = [];
+    private string _busqueda = string.Empty;
+    private int? _filtroEstado;
+    private bool cargando;
+    private string? error;
+
+    private IEnumerable<DestinoSalidaDto> Filtrados => _destinos.Where(d =>
+        (_filtroEstado is null || d.IdEstado == _filtroEstado) &&
+        (string.IsNullOrWhiteSpace(_busqueda) ||
+         Contiene(d.Nombre) || Contiene(d.Departamento) || Contiene(d.Municipio)));
+
+    private bool Contiene(string? texto) =>
+        texto?.Contains(_busqueda.Trim(), StringComparison.OrdinalIgnoreCase) == true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await EstadoAuth;
+        if (auth.User.Identity?.IsAuthenticated == true)
+            await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+
+        try
+        {
+            _destinos = await DestinoService.ListarAsync();
+            _estados = await CargarEstadosAsync();
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    // Si el catálogo de estados no está disponible, se arma con los estados que traen los destinos.
+    private async Task<List<EstadoSalidaDto>> CargarEstadosAsync()
+    {
+        try
+        {
+            var estados = await DestinoService.ListarEstadosAsync();
+            if (estados.Count > 0) return estados;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException) { }
+
+        return _destinos
+            .GroupBy(d => d.IdEstado)
+            .Select(g => new EstadoSalidaDto
+            {
+                IdEstado = g.Key,
+                NombreEstado = g.First().NombreEstado ?? $"Estado {g.Key}"
+            })
+            .OrderBy(e => e.NombreEstado)
+            .ToList();
+    }
+
+    private static string Ubicacion(DestinoSalidaDto d) =>
+        string.IsNullOrWhiteSpace(d.Municipio) ? d.Departamento : $"{d.Municipio}, {d.Departamento}";
+
+    private static Color ColorEstado(string? estado) => estado?.Trim().ToLowerInvariant() switch
+    {
+        "activo" or "disponible" or "habilitado" => Color.Success,
+        "inactivo" or "deshabilitado" or "cerrado" => Color.Error,
+        null or "" => Color.Default,
+        _ => Color.Info
+    };
+
+    private Task NuevoAsync() => AbrirDialogoAsync(null);
+
+    private Task EditarAsync(DestinoSalidaDto destino) => AbrirDialogoAsync(destino);
+
+    private async Task AbrirDialogoAsync(DestinoSalidaDto? destino)
+    {
+        var parametros = new DialogParameters<DestinoDialogo>
+        {
+            { x => x.Destino, destino },
+            { x => x.Estados, _estados }
+        };
+        var opciones = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+
+        var dialogo = await Dialogos.ShowAsync<DestinoDialogo>(null, parametros, opciones);
+        var resultado = await dialogo.Result;
+        if (resultado is null || resultado.Canceled) return;
+
+        Snackbar.Add(destino is null ? "Destino creado." : "Destino actualizado.", Severity.Success);
+        await CargarAsync();
+    }
+
+    private async Task EliminarAsync(DestinoSalidaDto destino)
+    {
+        var confirmar = await Dialogos.ShowMessageBoxAsync(
+            "Eliminar destino",
+            $"¿Seguro que querés eliminar “{destino.Nombre}”? Esta acción no se puede deshacer.",
+            yesText: "Eliminar", cancelText: "Cancelar");
+        if (confirmar != true) return;
+
+        try
+        {
+            await DestinoService.EliminarAsync(destino.IdDestino);
+            _destinos.Remove(destino);
+            Snackbar.Add("Destino eliminado.", Severity.Success);
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("No se pudo conectar con el servidor.", Severity.Error);
+        }
+    }
+}

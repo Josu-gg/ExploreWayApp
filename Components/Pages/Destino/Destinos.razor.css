@@ -1,0 +1,88 @@
+/* El AppBar es fijo, por eso el contenido arranca debajo de él. */
+.exploreway-destinos {
+    min-height: 100vh;
+    padding: 7rem 0 5rem;
+    background: var(--ew-paper);
+}
+
+.exploreway-destinos-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.exploreway-destinos-kicker {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    font-family: var(--ew-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ew-green-ink);
+}
+
+.exploreway-destinos-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+::deep .exploreway-destinos-buscar {
+    flex: 1 1 320px;
+    max-width: 480px;
+    background: #ffffff;
+    border-radius: 4px;
+}
+
+::deep .exploreway-destinos-tabla {
+    border: 1px solid var(--ew-line);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+::deep .exploreway-destinos-tabla .mud-table-head th {
+    font-family: var(--ew-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #475569;
+    background: #f8fafc;
+}
+
+.exploreway-destinos-nombre {
+    font-weight: 600;
+    color: var(--ew-ink);
+}
+
+.exploreway-destinos-desc {
+    max-width: 46ch;
+    margin-top: 2px;
+    font-size: 0.85rem;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.exploreway-destinos-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 4rem 1rem;
+}
+
+@media (max-width: 599px) {
+    .exploreway-destinos {
+        padding-top: 6rem;
+    }
+
+    .exploreway-destinos-desc {
+        max-width: 60vw;
+    }
+}

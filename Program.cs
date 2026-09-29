@@ -2,6 +2,7 @@
 using ExploreWayApp.Components;
 using ExploreWayApp.Config;
 using ExploreWayApp.Servicios;
+using ExploreWayApp.Servicios.Destino;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Options;
 using MudBlazor.Services;
@@ -37,6 +38,7 @@ builder.Services.AddScoped(sp =>
 });
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IDestinoService, DestinoService>();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthorizationCore();

@@ -1,0 +1,157 @@
+@using ExploreWayApp.DTOs.Destino
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Destino
+
+@inject IDestinoService DestinoService
+
+<MudDialog Class="exploreway-destino-dialogo">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@(EsEdicion ? Icons.Material.Filled.EditLocationAlt : Icons.Material.Filled.AddLocationAlt)"
+                     Style="color: var(--ew-primary);" />
+            <MudText Typo="Typo.h6" Class="font-weight-bold">
+                @(EsEdicion ? "Editar destino" : "Nuevo destino")
+            </MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        @if (error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4" Style="border-radius: 12px;">
+                @error
+            </MudAlert>
+        }
+
+        <MudForm @ref="_formulario" Model="modelo">
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudTextField Label="Nombre"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Counter="150"
+                                  MaxLength="150"
+                                  @bind-Value="modelo.Nombre"
+                                  For="@(() => modelo.Nombre)" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Departamento"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  MaxLength="100"
+                                  @bind-Value="modelo.Departamento"
+                                  For="@(() => modelo.Departamento)" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Municipio (opcional)"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  MaxLength="100"
+                                  @bind-Value="modelo.Municipio"
+                                  For="@(() => modelo.Municipio)" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSelect T="int?"
+                               Label="Estado"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               AnchorOrigin="Origin.BottomCenter"
+                               @bind-Value="modelo.IdEstado"
+                               For="@(() => modelo.IdEstado)">
+                        @foreach (var estado in Estados)
+                        {
+                            <MudSelectItem T="int?" Value="@estado.IdEstado">@estado.NombreEstado</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Descripción (opcional)"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Lines="4"
+                                  @bind-Value="modelo.Descripcion" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Class="text-none" Disabled="guardando" OnClick="Cancelar">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Class="rounded-pill px-6 text-none exploreway-btn-auth"
+                   Disabled="guardando"
+                   OnClick="GuardarAsync">
+            @if (guardando)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="color: #ffffff;" />
+            }
+            @(guardando ? "Guardando…" : "Guardar")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    // Destino a editar; null significa que se está creando uno nuevo.
+    [Parameter] public DestinoSalidaDto? Destino { get; set; }
+    [Parameter] public List<EstadoSalidaDto> Estados { get; set; } = [];
+
+    private readonly DestinoModificarDto modelo = new();
+    private MudForm _formulario = default!;
+    private string? error;
+    private bool guardando;
+
+    private bool EsEdicion => Destino is not null;
+
+    protected override void OnInitialized()
+    {
+        if (Destino is null) return;
+
+        modelo.Nombre = Destino.Nombre;
+        modelo.Descripcion = Destino.Descripcion;
+        modelo.Departamento = Destino.Departamento;
+        modelo.Municipio = Destino.Municipio;
+        modelo.IdEstado = Destino.IdEstado;
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task GuardarAsync()
+    {
+        if (guardando) return;
+
+        await _formulario.ValidateAsync();
+        if (!_formulario.IsValid) return;
+
+        guardando = true;
+        error = null;
+
+        try
+        {
+            modelo.Nombre = modelo.Nombre.Trim();
+            modelo.Departamento = modelo.Departamento.Trim();
+            modelo.Municipio = string.IsNullOrWhiteSpace(modelo.Municipio) ? null : modelo.Municipio.Trim();
+            modelo.Descripcion = string.IsNullOrWhiteSpace(modelo.Descripcion) ? null : modelo.Descripcion.Trim();
+
+            if (Destino is null)
+                await DestinoService.GuardarAsync(modelo);
+            else
+                await DestinoService.ModificarAsync(Destino.IdDestino, modelo);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+}
