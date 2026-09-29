@@ -1,7 +1,12 @@
 ﻿@inherits LayoutComponentBase
 @using MudBlazor
+@using Microsoft.AspNetCore.Components.Authorization
+@using ExploreWayApp.Auth
+@using ExploreWayApp.Servicios
 @inject ISnackbar Snackbar
 @inject NavigationManager NavManager
+@inject SesionUsuario Sesion
+@inject IAuthService AuthService
 
 @* Proveedores globales de MudBlazor con la paleta ExploreWay *@
 <MudThemeProvider Theme="TemaExploreWay.Instancia" />
@@ -34,19 +39,44 @@
 
         <MudSpacer />
 
-        <div class="d-none d-sm-flex align-center gap-3">
-            <MudButton Variant="Variant.Outlined"
-                       Href="/login"
-                       Class="rounded-pill px-5 py-2 text-none exploreway-btn-session">
-                Iniciar Sesión
-            </MudButton>
+        <AuthorizeView>
+            <Authorized>
+                <div class="d-none d-sm-flex align-center gap-3">
+                    <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true">
+                        <ActivatorContent Context="_act">
+                            <div class="d-flex align-center gap-2" style="cursor: pointer;">
+                                <MudAvatar Color="Color.Primary" Size="Size.Medium">@Iniciales</MudAvatar>
+                                <div class="d-flex flex-column" style="line-height: 1.2;">
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold">@Sesion.NombreCompleto</MudText>
+                                    <MudText Typo="Typo.caption">@Sesion.NombreRol</MudText>
+                                </div>
+                                <MudIcon Icon="@Icons.Material.Filled.ExpandMore" Size="Size.Small" />
+                            </div>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <MudMenuItem Disabled="true">@Sesion.Correo</MudMenuItem>
+                            <MudDivider />
+                            <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="CerrarSesion">Cerrar sesión</MudMenuItem>
+                        </ChildContent>
+                    </MudMenu>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="d-none d-sm-flex align-center gap-3">
+                    <MudButton Variant="Variant.Outlined"
+                               Href="/login"
+                               Class="rounded-pill px-5 py-2 text-none exploreway-btn-session">
+                        Iniciar Sesión
+                    </MudButton>
 
-            <MudButton Variant="Variant.Filled"
-                       Href="/registro"
-                       Class="rounded-pill px-5 py-2 text-none exploreway-btn-cta">
-                Registrarse
-            </MudButton>
-        </div>
+                    <MudButton Variant="Variant.Filled"
+                               Href="/registro"
+                               Class="rounded-pill px-5 py-2 text-none exploreway-btn-cta">
+                        Registrarse
+                    </MudButton>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
 
         <MudIconButton Icon="@Icons.Material.Filled.Menu"
                        Color="Color.Default"
@@ -94,24 +124,46 @@
 
         <MudDivider Class="my-4" />
 
-        <div class="d-flex flex-column gap-3 mt-auto pb-4">
-            <MudButton Variant="Variant.Outlined"
-                       Color="Color.Primary"
-                       FullWidth="true"
-                       Href="/login"
-                       Class="rounded-pill py-2 text-none"
-                       OnClick="@IrALogin">
-                Iniciar Sesión
-            </MudButton>
+        <AuthorizeView>
+            <Authorized>
+                <div class="d-flex flex-column gap-3 mt-auto pb-4">
+                    <div class="d-flex align-center gap-3 px-2">
+                        <MudAvatar Color="Color.Primary">@Iniciales</MudAvatar>
+                        <div class="d-flex flex-column" style="line-height: 1.2;">
+                            <MudText Typo="Typo.body2" Class="font-weight-bold">@Sesion.NombreCompleto</MudText>
+                            <MudText Typo="Typo.caption">@Sesion.Correo</MudText>
+                        </div>
+                    </div>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               FullWidth="true"
+                               Class="rounded-pill py-2 text-none"
+                               OnClick="@CerrarSesion">
+                        Cerrar sesión
+                    </MudButton>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="d-flex flex-column gap-3 mt-auto pb-4">
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               FullWidth="true"
+                               Href="/login"
+                               Class="rounded-pill py-2 text-none"
+                               OnClick="@IrALogin">
+                        Iniciar Sesión
+                    </MudButton>
 
-            <MudButton Variant="Variant.Filled"
-                       FullWidth="true"
-                       Href="/registro"
-                       Class="rounded-pill py-2 text-none exploreway-btn-cta"
-                       OnClick="@AbrirModalRegistro">
-                Registrarse
-            </MudButton>
-        </div>
+                    <MudButton Variant="Variant.Filled"
+                               FullWidth="true"
+                               Href="/registro"
+                               Class="rounded-pill py-2 text-none exploreway-btn-cta"
+                               OnClick="@AbrirModalRegistro">
+                        Registrarse
+                    </MudButton>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
     </MudDrawer>
 
     @* CONTENIDO PRINCIPAL DE LAS VISTAS *@
@@ -205,6 +257,17 @@
 @code {
     private bool _drawerOpen = false;
     private string _newsletterEmail = "";
+
+    private string Iniciales =>
+        string.Concat(Sesion.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2).Select(p => char.ToUpper(p[0])));
+
+    private void CerrarSesion()
+    {
+        _drawerOpen = false;
+        AuthService.CerrarSesion();
+        Snackbar.Add("Sesión cerrada.", Severity.Info);
+    }
 
     private void ToggleDrawer()
     {

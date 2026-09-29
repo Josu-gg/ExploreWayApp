@@ -1,4 +1,4 @@
-using ExploreWayApp.Auth;
+﻿using ExploreWayApp.Auth;
 using ExploreWayApp.Components;
 using ExploreWayApp.Config;
 using ExploreWayApp.Servicios;
@@ -23,10 +23,17 @@ builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
 
 // HttpClient por circuito (scoped) para que el JwtHandler lea el SesionUsuario
 // del propio circuito y envíe siempre el token vigente del usuario conectado.
-builder.Services.AddScoped<JwtHandler>();
-builder.Services.AddScoped(sp => new HttpClient(sp.GetRequiredService<JwtHandler>())
+builder.Services.AddScoped(sp =>
 {
-    BaseAddress = new Uri(sp.GetRequiredService<IOptions<ApiOptions>>().Value.BaseUrl)
+    // El JwtHandler necesita un handler interno que haga la petición HTTP real.
+    var jwt = new JwtHandler(sp.GetRequiredService<SesionUsuario>())
+    {
+        InnerHandler = new HttpClientHandler()
+    };
+    return new HttpClient(jwt)
+    {
+        BaseAddress = new Uri(sp.GetRequiredService<IOptions<ApiOptions>>().Value.BaseUrl)
+    };
 });
 
 builder.Services.AddScoped<IAuthService, AuthService>();

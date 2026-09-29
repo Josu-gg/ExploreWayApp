@@ -1,5 +1,313 @@
-﻿<h3>Registro</h3>
+@page "/registro"
+@layout ExploreWayApp.Components.Layout.AuthLayout
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text.RegularExpressions
+@using ExploreWayApp.DTOs.Auth
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios
+
+@inject IAuthService AuthService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navegacion
+
+<PageTitle>Crear cuenta — ExploreWay</PageTitle>
+
+<div class="exploreway-auth">
+
+    @* PANEL DE MARCA — LATERAL IZQUIERDO (SOLO ESCRITORIO) *@
+    <aside class="exploreway-auth-brand d-none d-md-flex flex-column justify-space-between pa-10">
+        <div class="exploreway-auth-topo" aria-hidden="true">
+            <svg viewBox="0 0 700 900" preserveAspectRatio="xMidYMid slice">
+                <path class="exploreway-topo-line exploreway-topo-line--mint" style="--i:0" d="M-40,180 C160,120 320,230 520,150 C620,110 680,180 740,140" />
+                <path class="exploreway-topo-line exploreway-topo-line--sky" style="--i:1" d="M-40,420 C180,360 340,470 540,390 C640,350 690,420 760,380" />
+                <path class="exploreway-topo-line exploreway-topo-line--mint" style="--i:2" d="M-40,660 C200,610 360,700 560,630 C650,600 700,660 760,620" />
+            </svg>
+        </div>
+
+        <div class="d-flex align-center gap-3">
+            <div class="exploreway-auth-logo">
+                <MudIcon Icon="@Icons.Material.Filled.Explore" Size="Size.Medium" />
+            </div>
+            <MudText Typo="Typo.h5" Class="font-weight-bold text-white" Style="letter-spacing: 0.5px;">
+                Explore<span style="color: var(--ew-mint);">Way</span>
+            </MudText>
+        </div>
+
+        <div>
+            <MudText Typo="Typo.h3" Class="exploreway-auth-headline text-white font-weight-bold mb-4">
+                Unite a la<br />
+                <span class="exploreway-gradient-text">comunidad</span> viajera.
+            </MudText>
+
+            <MudText Typo="Typo.body1" Class="exploreway-auth-sub mb-8">
+                Creá tu cuenta en minutos y empezá a reservar expediciones,
+                paquetes turísticos y experiencias únicas.
+            </MudText>
+
+            <div class="d-flex flex-column gap-4">
+                @foreach (var (codigo, beneficio) in _beneficios)
+                {
+                    <div class="exploreway-auth-stamp">
+                        <span class="exploreway-auth-stamp-code">@codigo</span>
+                        <MudText Typo="Typo.body2" Class="exploreway-auth-benefit">@beneficio</MudText>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <MudText Typo="Typo.caption" Class="exploreway-auth-copy">
+            © @DateTime.Now.Year ExploreWay · Todos los derechos reservados
+        </MudText>
+    </aside>
+
+    @* PANEL DEL FORMULARIO — LATERAL DERECHO *@
+    <main class="exploreway-auth-panel d-flex align-center justify-center" style="padding-top: 5rem;">
+        <a href="/" class="exploreway-auth-back d-none d-md-inline-flex">
+            <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+            Volver al inicio
+        </a>
+
+        <div class="exploreway-auth-card" style="max-width: 520px;">
+
+            @* LOGOTIPO SOLO EN MÓVIL *@
+            <div class="d-flex d-md-none align-center justify-center gap-2 mb-8">
+                <MudIcon Icon="@Icons.Material.Filled.Explore" Style="color: var(--ew-primary);" />
+                <MudText Typo="Typo.h5" Class="font-weight-bold">
+                    Explore<span style="color: var(--ew-primary);">Way</span>
+                </MudText>
+            </div>
+
+            <div class="exploreway-auth-accent"></div>
+
+            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1" Style="color: #0f172a;">
+                Crear cuenta
+            </MudText>
+            <MudText Typo="Typo.body1" Class="mb-8" Style="color: #475569;">
+                Completá tus datos para empezar a explorar.
+            </MudText>
+
+            @if (error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4" Style="border-radius: 12px;">
+                    @error
+                </MudAlert>
+            }
+
+            <MudForm @ref="_formulario" class="d-flex flex-column">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string"
+                                      Label="Nombre"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.None"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Person"
+                                      AdornmentColor="Color.Primary"
+                                      autocomplete="given-name"
+                                      @bind-Value="datos.Nombre"
+                                      Validation="ValidarNombre" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string"
+                                      Label="Apellido"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.None"
+                                      autocomplete="family-name"
+                                      @bind-Value="datos.Apellido"
+                                      Validation="ValidarApellido" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string"
+                                      Label="Teléfono"
+                                      Placeholder="+503 7000-0000"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.None"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Phone"
+                                      AdornmentColor="Color.Primary"
+                                      InputType="InputType.Telephone"
+                                      autocomplete="tel"
+                                      @bind-Value="datos.Telefono"
+                                      Validation="ValidarTelefono" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudDatePicker Label="Fecha de nacimiento (opcional)"
+                                       Variant="Variant.Outlined"
+                                       Margin="Margin.None"
+                                       Editable="true"
+                                       MaxDate="DateTime.Today"
+                                       DateFormat="dd/MM/yyyy"
+                                       @bind-Date="_fechaNacimiento" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField T="string"
+                                      Label="Dirección (opcional)"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.None"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Home"
+                                      AdornmentColor="Color.Primary"
+                                      autocomplete="street-address"
+                                      @bind-Value="datos.Direccion"
+                                      Validation="ValidarDireccion" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField T="string"
+                                      Label="Correo electrónico"
+                                      Placeholder="tu@correo.com"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.None"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Email"
+                                      AdornmentColor="Color.Primary"
+                                      autocomplete="username"
+                                      @bind-Value="datos.Correo"
+                                      Validation="ValidarCorreo" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField T="string"
+                                      Label="Contraseña"
+                                      HelperText="Mínimo 8 caracteres, con al menos una letra y un número."
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.None"
+                                      Adornment="Adornment.End"
+                                      AdornmentIcon="@(_verContra ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                      AdornmentColor="Color.Primary"
+                                      AdornmentAriaLabel="Mostrar u ocultar la contraseña"
+                                      OnAdornmentClick="AlternarContra"
+                                      InputType="@(_verContra ? InputType.Text : InputType.Password)"
+                                      autocomplete="new-password"
+                                      @bind-Value="datos.Contra"
+                                      Validation="ValidarContra" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField T="string"
+                                      Label="Confirmar contraseña"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.None"
+                                      InputType="@(_verContra ? InputType.Text : InputType.Password)"
+                                      autocomplete="new-password"
+                                      @bind-Value="_confirmacion"
+                                      Validation="ValidarConfirmacion" />
+                    </MudItem>
+                </MudGrid>
+
+                <MudButton Variant="Variant.Filled"
+                           Size="Size.Large"
+                           FullWidth="true"
+                           Class="rounded-pill py-3 mt-6 text-none exploreway-btn-auth"
+                           Disabled="enviando"
+                           OnClick="EnviarAsync">
+                    @if (enviando)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="color: #ffffff;" />
+                    }
+                    @(enviando ? "Creando cuenta…" : "Crear cuenta")
+                </MudButton>
+            </MudForm>
+
+            <MudDivider Class="my-8" />
+
+            <MudText Typo="Typo.body1" Class="text-center" Style="color: #475569;">
+                ¿Ya tenés cuenta?
+                <MudLink Href="/login" Class="exploreway-auth-link font-weight-bold">Iniciá sesión</MudLink>
+            </MudText>
+        </div>
+    </main>
+</div>
 
 @code {
+    private readonly RegistroClienteGuardar datos = new();
+    private MudForm _formulario = default!;
+    private DateTime? _fechaNacimiento;
+    private string _confirmacion = string.Empty;
+    private string? error;
+    private bool enviando;
+    private bool _verContra;
 
+    private static readonly (string Codigo, string Texto)[] _beneficios =
+    [
+        ("WP-01", "Reservás expediciones y paquetes turísticos al instante"),
+        ("WP-02", "Explorás destinos con guías certificados y verificados"),
+        ("WP-03", "Gestionás tu itinerario desde cualquier dispositivo")
+    ];
+
+    private static string? Requerido(string? valor, string mensaje, int max)
+    {
+        if (string.IsNullOrWhiteSpace(valor)) return mensaje;
+        if (valor.Trim().Length > max) return $"No puede superar {max} caracteres.";
+        return null;
+    }
+
+    private Func<string, string?> ValidarNombre => v => Requerido(v, "El nombre es obligatorio.", 100);
+    private Func<string, string?> ValidarApellido => v => Requerido(v, "El apellido es obligatorio.", 100);
+
+    private Func<string, string?> ValidarTelefono => v =>
+    {
+        if (string.IsNullOrWhiteSpace(v)) return "El teléfono es obligatorio.";
+        if (!Regex.IsMatch(v.Trim(), @"^[0-9+\-\s]{8,20}$"))
+            return "Solo números, +, - y espacios (8 a 20 caracteres).";
+        return null;
+    };
+
+    private Func<string?, string?> ValidarDireccion => v =>
+        v is { Length: > 250 } ? "La dirección no puede superar 250 caracteres." : null;
+
+    private Func<string, string?> ValidarCorreo => v =>
+    {
+        if (string.IsNullOrWhiteSpace(v)) return "El correo es obligatorio.";
+        if (!new EmailAddressAttribute().IsValid(v.Trim())) return "El formato del correo no es válido.";
+        return null;
+    };
+
+    private Func<string, string?> ValidarContra => v =>
+    {
+        if (string.IsNullOrWhiteSpace(v)) return "La contraseña es obligatoria.";
+        if (v.Length < 8 || v.Length > 72) return "Debe tener entre 8 y 72 caracteres.";
+        if (!Regex.IsMatch(v, @"^(?=.*[A-Za-z])(?=.*\d).+$")) return "Debe incluir al menos una letra y un número.";
+        return null;
+    };
+
+    private Func<string, string?> ValidarConfirmacion => v =>
+        v != datos.Contra ? "Las contraseñas no coinciden." : null;
+
+    private void AlternarContra() => _verContra = !_verContra;
+
+    private async Task EnviarAsync()
+    {
+        if (enviando) return;
+
+        await _formulario.ValidateAsync();
+        if (!_formulario.IsValid) return;
+
+        enviando = true;
+        error = null;
+
+        try
+        {
+            datos.Nombre = datos.Nombre.Trim();
+            datos.Apellido = datos.Apellido.Trim();
+            datos.Telefono = datos.Telefono.Trim();
+            datos.Correo = datos.Correo.Trim();
+            datos.Direccion = string.IsNullOrWhiteSpace(datos.Direccion) ? null : datos.Direccion.Trim();
+            datos.FechaNacimiento = _fechaNacimiento is { } f ? DateOnly.FromDateTime(f) : null;
+
+            await AuthService.RegistrarClienteAsync(datos);
+            Snackbar.Add("¡Cuenta creada! Ya podés iniciar sesión.", Severity.Success);
+            Navegacion.NavigateTo("/login");
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            enviando = false;
+        }
+    }
 }
