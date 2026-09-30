@@ -1,0 +1,46 @@
+@page "/admin/perfil"
+@layout AdminLayout
+
+@using ExploreWayApp.Auth
+
+@inject SesionUsuario Sesion
+
+<PageTitle>Mi perfil — ExploreWay</PageTitle>
+
+<div class="ew-admin-page">
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="px-4 px-md-8">
+        <header class="ew-admin-head">
+            <div>
+                <span class="ew-admin-kicker">Cuenta</span>
+                <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Mi perfil</MudText>
+            </div>
+        </header>
+
+        <div class="ew-panel">
+            <div class="d-flex align-center gap-4 pa-6">
+                <MudAvatar Color="Color.Primary" Style="width: 72px; height: 72px; font-size: 1.6rem;">@Iniciales</MudAvatar>
+                <div>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">@Sesion.NombreCompleto</MudText>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Primary" Class="ma-0 mt-1">
+                        @Sesion.NombreRol
+                    </MudChip>
+                </div>
+            </div>
+            <MudDivider />
+            <dl class="ew-datos">
+                <dt>Nombre completo</dt>
+                <dd>@Sesion.NombreCompleto</dd>
+                <dt>Correo electrónico</dt>
+                <dd>@Sesion.Correo</dd>
+                <dt>Rol</dt>
+                <dd>@Sesion.NombreRol</dd>
+            </dl>
+        </div>
+    </MudContainer>
+</div>
+
+@code {
+    private string Iniciales =>
+        string.Concat(Sesion.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2).Select(p => char.ToUpper(p[0])));
+}

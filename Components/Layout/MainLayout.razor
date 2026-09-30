@@ -56,7 +56,10 @@
                         <ChildContent>
                             <MudMenuItem Disabled="true">@Sesion.Correo</MudMenuItem>
                             <MudDivider />
-                            <MudMenuItem Icon="@Icons.Material.Filled.Landscape" Href="/destinos">Gestionar destinos</MudMenuItem>
+                            @if (Sesion.EsAdmin)
+                            {
+                                <MudMenuItem Icon="@Icons.Material.Filled.Dashboard" Href="/admin">Panel de administración</MudMenuItem>
+                            }
                             <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="CerrarSesion">Cerrar sesión</MudMenuItem>
                         </ChildContent>
                     </MudMenu>
@@ -135,15 +138,18 @@
                             <MudText Typo="Typo.caption">@Sesion.Correo</MudText>
                         </div>
                     </div>
+                    @if (Sesion.EsAdmin)
+                    {
                     <MudButton Variant="Variant.Text"
                                Color="Color.Primary"
                                FullWidth="true"
-                               StartIcon="@Icons.Material.Filled.Landscape"
-                               Href="/destinos"
+                               StartIcon="@Icons.Material.Filled.Dashboard"
+                               Href="/admin"
                                Class="rounded-pill py-2 text-none"
                                OnClick="@CloseDrawer">
-                        Gestionar destinos
+                        Panel de administración
                     </MudButton>
+                    }
                     <MudButton Variant="Variant.Outlined"
                                Color="Color.Primary"
                                FullWidth="true"

@@ -2,6 +2,7 @@
 using ExploreWayApp.Components;
 using ExploreWayApp.Config;
 using ExploreWayApp.Servicios;
+using ExploreWayApp.Servicios.actividad;
 using ExploreWayApp.Servicios.Destino;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Options;
@@ -39,10 +40,15 @@ builder.Services.AddScoped(sp =>
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDestinoService, DestinoService>();
+builder.Services.AddScoped<IActividadService, ActividadService>();
+builder.Services.AddScoped<IEstadoService, EstadoService>();
+
+
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthorizationCore();
 var app = builder.Build();
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

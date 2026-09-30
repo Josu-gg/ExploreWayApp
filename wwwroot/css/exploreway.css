@@ -1270,3 +1270,330 @@ html {
     .exploreway-sublink:hover {
         color: var(--ew-mint);
     }
+
+
+/* ============================================================
+   PANEL DE ADMINISTRACIÓN
+   ============================================================ */
+/* Layout del administrador — paleta ExploreWay (verde #00A86B, menta #5BE3C2, noche #0b1329) */
+.ew-admin-appbar {
+    background-color: rgba(255, 255, 255, 0.96) !important;
+    color: var(--ew-ink);
+    border-bottom: 1px solid var(--ew-line);
+    backdrop-filter: blur(14px);
+}
+
+.ew-admin-appbar-title {
+    color: var(--ew-ink);
+    font-family: var(--ew-display);
+}
+
+.ew-admin-drawer {
+    background: var(--ew-dark) !important;
+    color: #cbd5e1 !important;
+    border-right: 1px solid rgba(91, 227, 194, 0.12);
+}
+
+.ew-admin-drawer .mud-drawer-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.ew-admin-main {
+    background: var(--ew-paper);
+    min-height: 100vh;
+}
+
+/* Marca */
+.ew-admin-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem 1.25rem 1rem;
+}
+
+.ew-admin-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(91, 227, 194, 0.12);
+    color: var(--ew-mint);
+    border: 1px solid rgba(91, 227, 194, 0.3);
+}
+
+.ew-admin-brand-name {
+    font-family: var(--ew-display);
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: #ffffff;
+    line-height: 1.1;
+}
+
+    .ew-admin-brand-name span {
+        color: var(--ew-mint);
+    }
+
+.ew-admin-brand-tag {
+    font-family: var(--ew-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+/* Navegación */
+.ew-admin-nav {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    overflow-y: auto;
+}
+
+.ew-admin-nav-group {
+    display: block;
+    margin: 1.1rem 0.75rem 0.4rem;
+    font-family: var(--ew-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+.ew-admin-nav .mud-nav-link {
+    color: #cbd5e1;
+    border-radius: 10px;
+    margin-bottom: 2px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+    .ew-admin-nav .mud-nav-link .mud-nav-link-icon {
+        color: #94a3b8;
+    }
+
+    .ew-admin-nav .mud-nav-link:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: #ffffff;
+    }
+
+    .ew-admin-nav .mud-nav-link.active:not(.mud-nav-link-disabled) {
+        background: rgba(0, 168, 107, 0.2);
+        color: var(--ew-mint);
+        font-weight: 600;
+        box-shadow: inset 3px 0 0 var(--ew-primary);
+    }
+
+        .ew-admin-nav .mud-nav-link.active:not(.mud-nav-link-disabled) .mud-nav-link-icon {
+            color: var(--ew-mint);
+        }
+
+.ew-admin-drawer-foot {
+    padding: 1rem 1.25rem 1.25rem;
+}
+
+.ew-admin-logout {
+    color: var(--ew-mint) !important;
+    border-color: rgba(91, 227, 194, 0.4) !important;
+}
+
+    .ew-admin-logout:hover {
+        background: rgba(91, 227, 194, 0.1) !important;
+    }
+
+/* Bloqueo sin sesión */
+.ew-admin-bloqueo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 8rem 1rem;
+}
+
+/* Páginas del panel */
+.ew-admin-page {
+    padding: 2rem 0 4rem;
+}
+
+.ew-admin-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.ew-admin-kicker {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    font-family: var(--ew-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ew-green-ink);
+}
+
+.ew-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1.25rem;
+    background: #ffffff;
+    border: 1px solid var(--ew-line);
+    border-radius: 16px;
+}
+
+.ew-stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+}
+
+.ew-stat-label {
+    font-family: var(--ew-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #475569;
+}
+
+.ew-stat-value {
+    font-family: var(--ew-display);
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--ew-ink);
+}
+
+.ew-stat-value--text {
+    font-size: 1.35rem;
+    padding-top: 0.4rem;
+}
+
+.ew-panel {
+    background: #ffffff;
+    border: 1px solid var(--ew-line);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.ew-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--ew-line);
+}
+
+.ew-panel-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 3rem 1rem;
+}
+
+.ew-lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+    .ew-lista li {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.85rem 1.25rem;
+        border-bottom: 1px solid var(--ew-line);
+    }
+
+        .ew-lista li:last-child {
+            border-bottom: 0;
+        }
+
+.ew-lista-texto {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+    .ew-lista-texto strong {
+        color: var(--ew-ink);
+        font-weight: 600;
+    }
+
+    .ew-lista-texto span {
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+
+.ew-accesos {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem;
+}
+
+.ew-acceso {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 0.75rem;
+    border-radius: 10px;
+    color: var(--ew-ink);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+    .ew-acceso span {
+        flex: 1;
+    }
+
+    .ew-acceso .mud-icon-root:first-child {
+        color: var(--ew-primary);
+    }
+
+    .ew-acceso:hover {
+        background: rgba(0, 168, 107, 0.08);
+    }
+
+.ew-datos {
+    margin: 0;
+    padding: 1rem 1.5rem 1.5rem;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.9rem 2rem;
+}
+
+    .ew-datos dt {
+        font-family: var(--ew-mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #475569;
+        align-self: center;
+    }
+
+    .ew-datos dd {
+        margin: 0;
+        color: var(--ew-ink);
+        font-weight: 500;
+    }
+
+@media (max-width: 599px) {
+    .ew-datos {
+        grid-template-columns: 1fr;
+        gap: 0.2rem;
+    }
+
+        .ew-datos dd {
+            margin-bottom: 0.7rem;
+        }
+}

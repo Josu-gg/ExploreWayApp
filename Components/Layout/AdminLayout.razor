@@ -1,0 +1,162 @@
+@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+@using ExploreWayApp.Auth
+@using ExploreWayApp.Servicios
+@inject ISnackbar Snackbar
+@inject SesionUsuario Sesion
+@inject IAuthService AuthService
+
+@* Proveedores globales de MudBlazor con la paleta ExploreWay *@
+<MudThemeProvider Theme="TemaExploreWay.Instancia" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
+
+<MudLayout Class="ew-admin">
+
+    @* BARRA SUPERIOR *@
+    <MudAppBar Elevation="0" Class="ew-admin-appbar px-2 px-md-4">
+        <MudTooltip Text="@(_drawerAbierto ? "Ocultar menú" : "Mostrar menú")">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                           Edge="Edge.Start"
+                           aria-label="Alternar menú lateral"
+                           OnClick="AlternarDrawer" />
+        </MudTooltip>
+
+        <MudText Typo="Typo.subtitle1" Class="ew-admin-appbar-title font-weight-bold ml-2">
+            Panel de administración
+        </MudText>
+
+        <MudSpacer />
+
+        <AuthorizeView>
+            <Authorized>
+                <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true">
+                    <ActivatorContent Context="_act">
+                        <div class="d-flex align-center gap-2" style="cursor: pointer;">
+                            <MudAvatar Color="Color.Primary" Size="Size.Medium">@Iniciales</MudAvatar>
+                            <div class="d-none d-sm-flex flex-column" style="line-height: 1.2;">
+                                <MudText Typo="Typo.body2" Class="font-weight-bold">@Sesion.NombreCompleto</MudText>
+                                <MudText Typo="Typo.caption">@Sesion.NombreRol</MudText>
+                            </div>
+                            <MudIcon Icon="@Icons.Material.Filled.ExpandMore" Size="Size.Small" />
+                        </div>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <MudMenuItem Disabled="true">@Sesion.Correo</MudMenuItem>
+                        <MudDivider />
+                        <MudMenuItem Icon="@Icons.Material.Filled.Person" Href="/admin/perfil">Mi perfil</MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Public" Href="/">Ver sitio público</MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="CerrarSesion">Cerrar sesión</MudMenuItem>
+                    </ChildContent>
+                </MudMenu>
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+
+    @* MENÚ LATERAL IZQUIERDO DESPLEGABLE *@
+    <MudDrawer @bind-Open="_drawerAbierto"
+               Anchor="Anchor.Start"
+               Variant="DrawerVariant.Responsive"
+               Breakpoint="Breakpoint.Md"
+               ClipMode="DrawerClipMode.Never"
+               Elevation="0"
+               Width="270px"
+               Class="ew-admin-drawer">
+
+        <a href="/admin" class="ew-admin-brand text-decoration-none">
+            <div class="ew-admin-logo">
+                <MudIcon Icon="@Icons.Material.Filled.Explore" Size="Size.Medium" />
+            </div>
+            <div class="d-flex flex-column">
+                <span class="ew-admin-brand-name">Explore<span>Way</span></span>
+                <span class="ew-admin-brand-tag">Administración</span>
+            </div>
+        </a>
+
+        <MudNavMenu Class="ew-admin-nav">
+            <span class="ew-admin-nav-group">Principal</span>
+            <MudNavLink Href="/admin" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">
+                Panel general
+            </MudNavLink>
+
+            <span class="ew-admin-nav-group">Gestión</span>
+            <MudNavLink Href="/admin/destinos" Icon="@Icons.Material.Filled.Landscape">
+                Destinos
+            </MudNavLink>
+            <MudNavLink Href="/actividades" Icon="@Icons.Material.Filled.Hiking">
+                Actividades
+            </MudNavLink>
+
+            <span class="ew-admin-nav-group">Cuenta</span>
+            <MudNavLink Href="/admin/perfil" Icon="@Icons.Material.Filled.Person">
+                Mi perfil
+            </MudNavLink>
+
+            <span class="ew-admin-nav-group">Sitio</span>
+            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Public">
+                Ver sitio público
+            </MudNavLink>
+        </MudNavMenu>
+
+        <div class="ew-admin-drawer-foot">
+            <MudButton Variant="Variant.Outlined"
+                       FullWidth="true"
+                       StartIcon="@Icons.Material.Filled.Logout"
+                       Class="rounded-pill text-none ew-admin-logout"
+                       OnClick="CerrarSesion">
+                Cerrar sesión
+            </MudButton>
+        </div>
+    </MudDrawer>
+
+    @* CONTENIDO *@
+    <MudMainContent Class="ew-admin-main">
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                @Body
+            </Authorized>
+            <NotAuthorized>
+                <div class="ew-admin-bloqueo">
+                    <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Style="color: var(--ew-primary);" />
+                    @if (Sesion.Autenticado)
+                    {
+                        <MudText Typo="Typo.h5" Class="font-weight-bold mt-3">Acceso restringido</MudText>
+                        <MudText Typo="Typo.body2" Class="mb-5" Style="color: #64748b;">
+                            Esta sección es solo para administradores.
+                        </MudText>
+                        <MudButton Variant="Variant.Filled" Href="/" Class="rounded-pill px-6 text-none exploreway-btn-auth">
+                            Volver al inicio
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.h5" Class="font-weight-bold mt-3">Iniciá sesión para continuar</MudText>
+                        <MudText Typo="Typo.body2" Class="mb-5" Style="color: #64748b;">
+                            Esta sección es solo para administradores.
+                        </MudText>
+                        <MudButton Variant="Variant.Filled" Href="/login" Class="rounded-pill px-6 text-none exploreway-btn-auth">
+                            Iniciar sesión
+                        </MudButton>
+                    }
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _drawerAbierto = true;
+
+    private string Iniciales =>
+        string.Concat(Sesion.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2).Select(p => char.ToUpper(p[0])));
+
+    private void AlternarDrawer() => _drawerAbierto = !_drawerAbierto;
+
+    private void CerrarSesion()
+    {
+        AuthService.CerrarSesion();
+        Snackbar.Add("Sesión cerrada.", Severity.Info);
+    }
+}

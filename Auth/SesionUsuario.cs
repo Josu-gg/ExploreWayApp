@@ -8,6 +8,8 @@
         public string NombreRol { get; private set; } = string.Empty;
         public string NombreCompleto { get; private set; } = string.Empty;
 
+        public bool EsAdmin => string.Equals(NombreRol, "Admin", StringComparison.OrdinalIgnoreCase);
+
         public bool Autenticado => !string.IsNullOrWhiteSpace(Token);
 
         public void Iniciar(DTOs.Auth.LoginSalida datos)

@@ -1,0 +1,162 @@
+﻿@* Components/Pages/Actividades/Formulario.razor *@
+@using ExploreWayApp.DTOs.actividad
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.actividad
+@layout AdminLayout
+@page "/actividades/nueva"
+@page "/actividades/editar/{Id:int}"
+@inject IActividadService ActividadService
+@inject IEstadoService EstadoService
+@inject NavigationManager Navegacion
+
+<PageTitle>@titulo</PageTitle>
+
+<h3 class="mb-3">@titulo</h3>
+
+@if (cargando)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div>
+    </div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(error))
+    {
+        <div class="alert alert-danger" role="alert">@error</div>
+    }
+
+    <EditForm Model="modelo" OnValidSubmit="GuardarAsync" class="col-lg-7">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" />
+
+        <div class="mb-3">
+            <label for="nombre" class="form-label">Nombre *</label>
+            <InputText id="nombre" class="form-control" @bind-Value="modelo.Nombre" maxlength="150" />
+            <ValidationMessage For="() => modelo.Nombre" class="text-danger" />
+        </div>
+
+        <div class="mb-3">
+            <label for="descripcion" class="form-label">Descripción</label>
+            <InputTextArea id="descripcion" class="form-control" rows="4" @bind-Value="modelo.Descripcion" maxlength="2000" />
+            <div class="form-text text-end">@(modelo.Descripcion?.Length ?? 0)/2000</div>
+            <ValidationMessage For="() => modelo.Descripcion" class="text-danger" />
+        </div>
+
+        <div class="mb-3">
+            <label for="dificultad" class="form-label">Dificultad</label>
+            <InputSelect id="dificultad" class="form-select" @bind-Value="modelo.Dificultad">
+                <option value="">Sin especificar</option>
+                @foreach (var d in dificultades)
+                {
+                    <option value="@d">@d</option>
+                }
+            </InputSelect>
+            <ValidationMessage For="() => modelo.Dificultad" class="text-danger" />
+        </div>
+
+        <div class="mb-4">
+            <label for="estado" class="form-label">Estado *</label>
+            <InputSelect id="estado" class="form-select" @bind-Value="modelo.IdEstado">
+                <option value="0">Selecciona un estado</option>
+                @foreach (var e in estados)
+                {
+                    <option value="@e.IdEstado">@e.NombreEstado</option>
+                }
+            </InputSelect>
+            <ValidationMessage For="() => modelo.IdEstado" class="text-danger" />
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" disabled="@guardando">
+                @(guardando ? "Guardando..." : "Guardar")
+            </button>
+            <a class="btn btn-outline-secondary" href="actividades">Cancelar</a>
+        </div>
+    </EditForm>
+}
+
+@code {
+    private static readonly string[] dificultades = ["Fácil", "Moderada", "Difícil"];
+
+    [Parameter] public int? Id { get; set; }
+
+    private ActividadModificar modelo = new();
+    private List<EstadoSalida> estados = [];
+    private string? error;
+    private bool cargando = true;
+    private bool guardando;
+
+    private bool EsEdicion => Id.HasValue;
+    private string titulo => EsEdicion ? "Editar actividad" : "Nueva actividad";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        cargando = true;
+        try
+        {
+            estados = await EstadoService.ListarAsync();
+
+            if (EsEdicion)
+            {
+                var actual = await ActividadService.ObtenerAsync(Id!.Value);
+                modelo = new ActividadModificar
+                {
+                    IdActividad = actual.IdActividad,
+                    Nombre = actual.Nombre,
+                    Descripcion = actual.Descripcion,
+                    Dificultad = actual.Dificultad,
+                    IdEstado = actual.IdEstado
+                };
+            }
+            else
+            {
+                modelo = new ActividadModificar();
+            }
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task GuardarAsync()
+    {
+        guardando = true;
+        error = null;
+
+        modelo.Nombre = modelo.Nombre.Trim();
+        modelo.Descripcion = string.IsNullOrWhiteSpace(modelo.Descripcion) ? null : modelo.Descripcion.Trim();
+        modelo.Dificultad = string.IsNullOrWhiteSpace(modelo.Dificultad) ? null : modelo.Dificultad;
+
+        try
+        {
+            if (EsEdicion)
+                await ActividadService.ModificarAsync(Id!.Value, modelo);
+            else
+                await ActividadService.CrearAsync(modelo);
+
+            Navegacion.NavigateTo("actividades");
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor.";
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+}

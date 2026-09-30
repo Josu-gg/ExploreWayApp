@@ -1,8 +1,5 @@
-/* El AppBar es fijo, por eso el contenido arranca debajo de él. */
 .exploreway-destinos {
-    min-height: 100vh;
-    padding: 7rem 0 5rem;
-    background: var(--ew-paper);
+    padding: 2rem 0 4rem;
 }
 
 .exploreway-destinos-head {
@@ -78,10 +75,6 @@
 }
 
 @media (max-width: 599px) {
-    .exploreway-destinos {
-        padding-top: 6rem;
-    }
-
     .exploreway-destinos-desc {
         max-width: 60vw;
     }
