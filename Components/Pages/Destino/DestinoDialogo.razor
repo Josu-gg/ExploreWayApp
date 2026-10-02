@@ -95,7 +95,7 @@
 
     // Destino a editar; null significa que se está creando uno nuevo.
     [Parameter] public DestinoSalidaDto? Destino { get; set; }
-    [Parameter] public List<EstadoSalidaDto> Estados { get; set; } = [];
+    [Parameter] public List<EstadoSalida> Estados { get; set; } = [];
 
     private readonly DestinoModificarDto modelo = new();
     private MudForm _formulario = default!;

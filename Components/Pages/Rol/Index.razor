@@ -1,0 +1,248 @@
+﻿@page "/admin/roles"
+@layout AdminLayout
+
+@using ExploreWayApp.DTOs.Estado
+@using ExploreWayApp.DTOs.Rol
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Estado
+@using ExploreWayApp.Servicios.Rol
+
+@inject IRolService RolService
+@inject IEstadoService EstadoService
+@inject IDialogService Dialogos
+@inject ISnackbar Snackbar
+
+<PageTitle>Roles — ExploreWay</PageTitle>
+
+<div class="exploreway-destinos">
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+
+        <header class="exploreway-destinos-head">
+            <div>
+                <span class="exploreway-destinos-kicker">Catálogo · @_roles.Count registrados</span>
+                <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Roles</MudText>
+                <MudText Typo="Typo.body1" Class="exploreway-section-lead">
+                    Administrá los roles que definen los permisos de los usuarios de ExploreWay.
+                </MudText>
+            </div>
+            <MudButton Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Class="rounded-pill px-6 py-2 text-none exploreway-btn-auth"
+                       Disabled="cargando"
+                       OnClick="NuevoAsync">
+                Nuevo rol
+            </MudButton>
+        </header>
+
+        <div class="exploreway-destinos-filtros">
+            <MudTextField @bind-Value="_busqueda"
+                          Placeholder="Buscar por nombre del rol"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          AdornmentColor="Color.Primary"
+                          Immediate="true"
+                          Clearable="true"
+                          Class="exploreway-destinos-buscar" />
+        </div>
+
+        @if (error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;"
+                      ContentAlignment="HorizontalAlignment.Start">
+                <div class="d-flex align-center justify-space-between flex-wrap gap-3">
+                    <span>@error</span>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error"
+                               Class="text-none" OnClick="CargarAsync">
+                        Reintentar
+                    </MudButton>
+                </div>
+            </MudAlert>
+        }
+
+        <MudTable Items="Filtrados"
+                  Loading="cargando"
+                  LoadingProgressColor="Color.Primary"
+                  Hover="true"
+                  Breakpoint="Breakpoint.Sm"
+                  Elevation="0"
+                  RowsPerPage="10"
+                  Class="exploreway-destinos-tabla">
+            <HeaderContent>
+                <MudTh><MudTableSortLabel T="RolSalida" SortBy="r => r.IdRol">ID</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel T="RolSalida" SortBy="r => r.NombreRol" InitialDirection="SortDirection.Ascending">Rol</MudTableSortLabel></MudTh>
+                <MudTh>Estado</MudTh>
+                <MudTh Style="text-align: right;">Acciones</MudTh>
+            </HeaderContent>
+
+            <RowTemplate>
+                <MudTd DataLabel="ID">@context.IdRol</MudTd>
+                <MudTd DataLabel="Rol">
+                    <div class="exploreway-destinos-nombre">@context.NombreRol</div>
+                </MudTd>
+                <MudTd DataLabel="Estado">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Info" Class="ma-0">
+                        @NombreEstado(context.IdEstado)
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Acciones" Style="text-align: right; white-space: nowrap;">
+                    <MudTooltip Text="Editar">
+                        <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small" Color="Color.Primary"
+                                       aria-label="@($"Editar {context.NombreRol}")"
+                                       OnClick="@(() => EditarAsync(context))" />
+                    </MudTooltip>
+                    <MudTooltip Text="Eliminar">
+                        <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"
+                                       aria-label="@($"Eliminar {context.NombreRol}")"
+                                       OnClick="@(() => EliminarAsync(context))" />
+                    </MudTooltip>
+                </MudTd>
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <div class="exploreway-destinos-vacio">
+                    <MudIcon Icon="@Icons.Material.Outlined.AdminPanelSettings" Size="Size.Large" Style="color: var(--ew-teal);" />
+                    @if (_roles.Count == 0)
+                    {
+                        <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">Todavía no hay roles</MudText>
+                        <MudText Typo="Typo.body2" Style="color: #64748b;">Creá el primero con el botón “Nuevo rol”.</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">Sin resultados</MudText>
+                        <MudText Typo="Typo.body2" Style="color: #64748b;">Ningún rol coincide con la búsqueda.</MudText>
+                    }
+                </div>
+            </NoRecordsContent>
+
+            <LoadingContent>
+                <MudText Typo="Typo.body2" Class="pa-6" Style="color: #64748b;">Cargando roles…</MudText>
+            </LoadingContent>
+
+            <PagerContent>
+                <MudTablePager RowsPerPageString="Filas por página:"
+                               InfoFormat="{first_item}-{last_item} de {all_items}"
+                               PageSizeOptions="new[] { 10, 25, 50 }" />
+            </PagerContent>
+        </MudTable>
+    </MudContainer>
+</div>
+
+@code {
+    private List<RolSalida> _roles = [];
+    private List<EstadoSalida> _estados = [];
+    private string _busqueda = string.Empty;
+    private bool cargando;
+    private string? error;
+
+    private IEnumerable<RolSalida> Filtrados => _roles.Where(r =>
+        string.IsNullOrWhiteSpace(_busqueda) ||
+        r.NombreRol.Contains(_busqueda.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private string NombreEstado(int idEstado) =>
+        _estados.FirstOrDefault(e => e.IdEstado == idEstado)?.NombreEstado ?? $"Estado {idEstado}";
+
+    // Solo los estados de tipo "General" se pueden asignar a un rol.
+    private List<EstadoSalida> EstadosGeneral => _estados
+        .Where(e => string.Equals(e.TipoEstado, "General", StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+
+        try
+        {
+            _estados = await EstadoService.ListarAsync();
+            _roles = await RolService.ListarAsync();
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private Task NuevoAsync() => AbrirDialogoAsync(null);
+
+    private Task EditarAsync(RolSalida rol) => AbrirDialogoAsync(rol);
+
+    private async Task AbrirDialogoAsync(RolSalida? rol)
+    {
+        var parametros = new DialogParameters<RolDialogo>
+        {
+            { x => x.RolEditar, rol },
+            { x => x.Estados, EstadosGeneral }
+        };
+        var opciones = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+
+        var dialogo = await Dialogos.ShowAsync<RolDialogo>(null, parametros, opciones);
+        var resultado = await dialogo.Result;
+        if (resultado is null || resultado.Canceled) return;
+
+        var datos = (RolGuardar)resultado.Data!;
+
+        try
+        {
+            if (rol is null)
+            {
+                await RolService.GuardarAsync(datos);
+                Snackbar.Add("Rol creado.", Severity.Success);
+            }
+            else
+            {
+                await RolService.ModificarAsync(rol.IdRol, new RolModificar
+                {
+                    IdRol = rol.IdRol,
+                    NombreRol = datos.NombreRol,
+                    IdEstado = datos.IdEstado
+                });
+                Snackbar.Add("Rol actualizado.", Severity.Success);
+            }
+            await CargarAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("No se pudo conectar con el servidor.", Severity.Error);
+        }
+    }
+
+    private async Task EliminarAsync(RolSalida rol)
+    {
+        var confirmar = await Dialogos.ShowMessageBoxAsync(
+            "Eliminar rol",
+            $"¿Seguro que querés eliminar “{rol.NombreRol}”? Esta acción no se puede deshacer.",
+            yesText: "Eliminar", cancelText: "Cancelar");
+        if (confirmar != true) return;
+
+        try
+        {
+            await RolService.EliminarAsync(rol.IdRol);
+            _roles.Remove(rol);
+            Snackbar.Add("Rol eliminado.", Severity.Success);
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("No se pudo conectar con el servidor.", Severity.Error);
+        }
+    }
+}

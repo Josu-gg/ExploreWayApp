@@ -1,0 +1,206 @@
+﻿@page "/admin/estados"
+@layout AdminLayout
+
+@using ExploreWayApp.DTOs.Estado
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Estado
+
+@inject IEstadoService EstadoService
+@inject IDialogService Dialogos
+@inject ISnackbar Snackbar
+
+<PageTitle>Estados — ExploreWay</PageTitle>
+
+<div class="exploreway-destinos">
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+
+        <header class="exploreway-destinos-head">
+            <div>
+                <span class="exploreway-destinos-kicker">Catálogo · @_estados.Count registrados</span>
+                <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Estados</MudText>
+                <MudText Typo="Typo.body1" Class="exploreway-section-lead">
+                    Administrá los estados que usan destinos, actividades, reservas y demás módulos.
+                </MudText>
+            </div>
+            <MudButton Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Class="rounded-pill px-6 py-2 text-none exploreway-btn-auth"
+                       OnClick="NuevoAsync">
+                Nuevo estado
+            </MudButton>
+        </header>
+
+        <div class="exploreway-destinos-filtros">
+            <MudTextField @bind-Value="_busqueda"
+                          Placeholder="Buscar por nombre o tipo"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          AdornmentColor="Color.Primary"
+                          Immediate="true"
+                          Clearable="true"
+                          Class="exploreway-destinos-buscar" />
+        </div>
+
+        <MudTable Items="Filtrados"
+                  Hover="true"
+                  Breakpoint="Breakpoint.Sm"
+                  Elevation="0"
+                  RowsPerPage="10"
+                  Class="exploreway-destinos-tabla">
+            <HeaderContent>
+                <MudTh><MudTableSortLabel T="EstadoSalida" SortBy="e => e.IdEstado">ID</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel T="EstadoSalida" SortBy="e => e.NombreEstado" InitialDirection="SortDirection.Ascending">Nombre</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel T="EstadoSalida" SortBy="e => e.TipoEstado">Tipo</MudTableSortLabel></MudTh>
+                <MudTh Style="text-align: right;">Acciones</MudTh>
+            </HeaderContent>
+
+            <RowTemplate>
+                <MudTd DataLabel="ID">@context.IdEstado</MudTd>
+                <MudTd DataLabel="Nombre">
+                    <div class="exploreway-destinos-nombre">@context.NombreEstado</div>
+                </MudTd>
+                <MudTd DataLabel="Tipo">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Info" Class="ma-0">
+                        @context.TipoEstado
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Acciones" Style="text-align: right; white-space: nowrap;">
+                    <MudTooltip Text="Editar">
+                        <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small" Color="Color.Primary"
+                                       aria-label="@($"Editar {context.NombreEstado}")"
+                                       OnClick="@(() => EditarAsync(context))" />
+                    </MudTooltip>
+                    <MudTooltip Text="Eliminar">
+                        <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"
+                                       aria-label="@($"Eliminar {context.NombreEstado}")"
+                                       OnClick="@(() => EliminarAsync(context))" />
+                    </MudTooltip>
+                </MudTd>
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <div class="exploreway-destinos-vacio">
+                    <MudIcon Icon="@Icons.Material.Outlined.Flag" Size="Size.Large" Style="color: var(--ew-teal);" />
+                    @if (_estados.Count == 0)
+                    {
+                        <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">Todavía no hay estados</MudText>
+                        <MudText Typo="Typo.body2" Style="color: #64748b;">Creá el primero con el botón “Nuevo estado”.</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">Sin resultados</MudText>
+                        <MudText Typo="Typo.body2" Style="color: #64748b;">Ningún estado coincide con la búsqueda.</MudText>
+                    }
+                </div>
+            </NoRecordsContent>
+
+            <PagerContent>
+                <MudTablePager RowsPerPageString="Filas por página:"
+                               InfoFormat="{first_item}-{last_item} de {all_items}"
+                               PageSizeOptions="new[] { 10, 25, 50 }" />
+            </PagerContent>
+        </MudTable>
+    </MudContainer>
+</div>
+
+@code {
+    private List<EstadoSalida> _estados = [];
+    private string _busqueda = string.Empty;
+
+    private IEnumerable<EstadoSalida> Filtrados => _estados.Where(e =>
+        string.IsNullOrWhiteSpace(_busqueda) || Contiene(e.NombreEstado) || Contiene(e.TipoEstado));
+
+    private bool Contiene(string texto) =>
+        texto.Contains(_busqueda.Trim(), StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        try
+        {
+            _estados = await EstadoService.ListarAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("No se pudo conectar con el servidor.", Severity.Error);
+        }
+    }
+
+    private Task NuevoAsync() => AbrirDialogoAsync(null);
+
+    private Task EditarAsync(EstadoSalida estado) => AbrirDialogoAsync(estado);
+
+    private async Task AbrirDialogoAsync(EstadoSalida? estado)
+    {
+        var parametros = new DialogParameters<EstadoDialogo>
+        {
+            { x => x.EstadoEditar, estado }
+        };
+        var opciones = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+
+        var dialogo = await Dialogos.ShowAsync<EstadoDialogo>(null, parametros, opciones);
+        var resultado = await dialogo.Result;
+        if (resultado is null || resultado.Canceled) return;
+
+        var datos = (EstadoGuardar)resultado.Data!;
+
+        try
+        {
+            if (estado is null)
+            {
+                await EstadoService.GuardarAsync(datos);
+                Snackbar.Add("Estado creado.", Severity.Success);
+            }
+            else
+            {
+                await EstadoService.ModificarAsync(estado.IdEstado, new EstadoModificar
+                {
+                    IdEstado = estado.IdEstado,
+                    NombreEstado = datos.NombreEstado,
+                    TipoEstado = datos.TipoEstado
+                });
+                Snackbar.Add("Estado actualizado.", Severity.Success);
+            }
+            await CargarAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("No se pudo conectar con el servidor.", Severity.Error);
+        }
+    }
+
+    private async Task EliminarAsync(EstadoSalida estado)
+    {
+        var confirmar = await Dialogos.ShowMessageBoxAsync(
+            "Eliminar estado",
+            $"¿Seguro que querés eliminar “{estado.NombreEstado}”? Esta acción no se puede deshacer.",
+            yesText: "Eliminar", cancelText: "Cancelar");
+        if (confirmar != true) return;
+
+        try
+        {
+            await EstadoService.EliminarAsync(estado.IdEstado);
+            _estados.Remove(estado);
+            Snackbar.Add("Estado eliminado.", Severity.Success);
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("No se pudo conectar con el servidor.", Severity.Error);
+        }
+    }
+}

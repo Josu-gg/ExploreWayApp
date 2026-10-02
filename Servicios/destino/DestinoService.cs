@@ -1,3 +1,4 @@
+using ExploreWayApp.DTOs.Estado;
 using ExploreWayApp.DTOs.Destino;
 using System.Net.Http.Json;
 
@@ -18,8 +19,8 @@ public sealed class DestinoService(HttpClient http) : IDestinoService
     public async Task<List<DestinoSalidaDto>> ListarPorEstadoAsync(int idEstado) =>
         await LeerAsync<List<DestinoSalidaDto>>($"{Url}/estado/{idEstado}") ?? [];
 
-    public async Task<List<EstadoSalidaDto>> ListarEstadosAsync() =>
-        await LeerAsync<List<EstadoSalidaDto>>(UrlEstados) ?? [];
+    public async Task<List<EstadoSalida>> ListarEstadosAsync() =>
+        await LeerAsync<List<EstadoSalida>>(UrlEstados) ?? [];
 
     public async Task GuardarAsync(DestinoGuardarDto dto) =>
         await RespuestaApi.ValidarAsync(await http.PostAsJsonAsync(Url, dto));

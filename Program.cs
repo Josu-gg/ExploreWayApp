@@ -1,9 +1,11 @@
-﻿using ExploreWayApp.Auth;
-using ExploreWayApp.Components;
+﻿using ExploreWayApp.Components;
+using ExploreWayApp.Auth;
 using ExploreWayApp.Config;
 using ExploreWayApp.Servicios;
 using ExploreWayApp.Servicios.actividad;
 using ExploreWayApp.Servicios.Destino;
+using ExploreWayApp.Servicios.Estado;
+using ExploreWayApp.Servicios.Rol;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Options;
 using MudBlazor.Services;
@@ -42,6 +44,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDestinoService, DestinoService>();
 builder.Services.AddScoped<IActividadService, ActividadService>();
 builder.Services.AddScoped<IEstadoService, EstadoService>();
+builder.Services.AddScoped<IRolService, RolService>();
 
 
 

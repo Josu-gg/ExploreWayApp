@@ -175,7 +175,7 @@
     [CascadingParameter] private Task<AuthenticationState> EstadoAuth { get; set; } = default!;
 
     private List<DestinoSalidaDto> _destinos = [];
-    private List<EstadoSalidaDto> _estados = [];
+    private List<EstadoSalida> _estados = [];
     private string _busqueda = string.Empty;
     private int? _filtroEstado;
     private bool cargando;
@@ -221,7 +221,7 @@
     }
 
     // Si el catálogo de estados no está disponible, se arma con los estados que traen los destinos.
-    private async Task<List<EstadoSalidaDto>> CargarEstadosAsync()
+    private async Task<List<EstadoSalida>> CargarEstadosAsync()
     {
         try
         {
@@ -232,7 +232,7 @@
 
         return _destinos
             .GroupBy(d => d.IdEstado)
-            .Select(g => new EstadoSalidaDto
+            .Select(g => new EstadoSalida
             {
                 IdEstado = g.Key,
                 NombreEstado = g.First().NombreEstado ?? $"Estado {g.Key}"

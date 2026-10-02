@@ -1,0 +1,79 @@
+﻿@using ExploreWayApp.DTOs.Estado
+
+<MudDialog Class="exploreway-destino-dialogo">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Flag" Style="color: var(--ew-primary);" />
+            <MudText Typo="Typo.h6" Class="font-weight-bold">
+                @(EsEdicion ? "Editar estado" : "Nuevo estado")
+            </MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudForm @ref="_formulario" Model="modelo">
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudTextField Label="Nombre del estado"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Counter="50"
+                                  MaxLength="50"
+                                  @bind-Value="modelo.NombreEstado"
+                                  For="@(() => modelo.NombreEstado)" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Tipo de estado"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Counter="50"
+                                  MaxLength="50"
+                                  @bind-Value="modelo.TipoEstado"
+                                  For="@(() => modelo.TipoEstado)" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Class="text-none" OnClick="Cancelar">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Class="rounded-pill px-6 text-none exploreway-btn-auth"
+                   OnClick="GuardarAsync">
+            Guardar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    // Estado a editar; null significa que se está creando uno nuevo.
+    [Parameter] public EstadoSalida? EstadoEditar { get; set; }
+
+    private readonly EstadoGuardar modelo = new();
+    private MudForm _formulario = default!;
+
+    private bool EsEdicion => EstadoEditar is not null;
+
+    protected override void OnInitialized()
+    {
+        if (EstadoEditar is null) return;
+
+        modelo.NombreEstado = EstadoEditar.NombreEstado;
+        modelo.TipoEstado = EstadoEditar.TipoEstado;
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task GuardarAsync()
+    {
+        await _formulario.ValidateAsync();
+        if (!_formulario.IsValid) return;
+
+        modelo.NombreEstado = modelo.NombreEstado.Trim();
+        modelo.TipoEstado = modelo.TipoEstado.Trim();
+
+        MudDialog.Close(DialogResult.Ok(modelo));
+    }
+}
