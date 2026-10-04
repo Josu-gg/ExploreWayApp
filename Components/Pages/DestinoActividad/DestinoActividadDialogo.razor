@@ -1,0 +1,212 @@
+@using ExploreWayApp.DTOs.actividad
+@using ExploreWayApp.DTOs.Destino
+@using ExploreWayApp.DTOs.DestinoActividad
+@using ExploreWayApp.DTOs.Estado
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.DestinoActividad
+
+@inject IDestinoActividadService AsignacionService
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@(EsEdicion ? Icons.Material.Filled.EditLocationAlt : Icons.Material.Filled.AddLocationAlt)"
+                     Style="color: var(--ew-primary);" />
+            <MudText Typo="Typo.h6" Class="font-weight-bold">
+                @(EsEdicion ? "Editar asignación" : "Nueva asignación")
+            </MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        @if (error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4" Style="border-radius: 12px;">
+                @error
+            </MudAlert>
+        }
+
+        <MudForm @ref="_formulario" Model="@((object)(EsEdicion ? edicion : alta))">
+            <MudGrid Spacing="2">
+                @if (EsEdicion)
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Destino" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      ReadOnly="true" Value="@Item!.NombreDestino" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Actividad" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      ReadOnly="true" Value="@Item!.NombreActividad" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField T="int?"
+                                         Label="Duración (minutos)"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Min="1" Max="1439"
+                                         HideSpinButtons="true"
+                                         @bind-Value="edicion.DuracionMinutos"
+                                         For="@(() => edicion.DuracionMinutos)" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField T="decimal?"
+                                         Label="Precio base"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Min="0m"
+                                         Format="0.00"
+                                         Adornment="Adornment.Start"
+                                         AdornmentText="$"
+                                         HideSpinButtons="true"
+                                         @bind-Value="edicion.PrecioBase"
+                                         For="@(() => edicion.PrecioBase)" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudSelect T="int?"
+                                   Label="Estado"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   AnchorOrigin="Origin.BottomCenter"
+                                   @bind-Value="edicion.IdEstado"
+                                   For="@(() => edicion.IdEstado)">
+                            @foreach (var estado in Estados)
+                            {
+                                <MudSelectItem T="int?" Value="@estado.IdEstado">@estado.NombreEstado</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                }
+                else
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="int?"
+                                   Label="Destino"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   AnchorOrigin="Origin.BottomCenter"
+                                   @bind-Value="alta.IdDestino"
+                                   For="@(() => alta.IdDestino)">
+                            @foreach (var d in Destinos)
+                            {
+                                <MudSelectItem T="int?" Value="@d.IdDestino">@d.Nombre</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="int?"
+                                   Label="Actividad"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   AnchorOrigin="Origin.BottomCenter"
+                                   @bind-Value="alta.IdActividad"
+                                   For="@(() => alta.IdActividad)">
+                            @foreach (var a in Actividades)
+                            {
+                                <MudSelectItem T="int?" Value="@a.IdActividad">@a.Nombre</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField T="int?"
+                                         Label="Duración (minutos)"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Min="1" Max="1439"
+                                         HideSpinButtons="true"
+                                         @bind-Value="alta.DuracionMinutos"
+                                         For="@(() => alta.DuracionMinutos)" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField T="decimal?"
+                                         Label="Precio base"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Min="0m"
+                                         Format="0.00"
+                                         Adornment="Adornment.Start"
+                                         AdornmentText="$"
+                                         HideSpinButtons="true"
+                                         @bind-Value="alta.PrecioBase"
+                                         For="@(() => alta.PrecioBase)" />
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Class="text-none" Disabled="guardando" OnClick="Cancelar">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Class="rounded-pill px-6 text-none exploreway-btn-auth"
+                   Disabled="guardando"
+                   OnClick="GuardarAsync">
+            @if (guardando)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="color: #ffffff;" />
+            }
+            @(guardando ? "Guardando…" : "Guardar")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    // Asignación a editar; null significa que se está creando una nueva.
+    [Parameter] public DestinoActividadSalida? Item { get; set; }
+    [Parameter] public List<EstadoSalida> Estados { get; set; } = [];
+    [Parameter] public List<DestinoSalidaDto> Destinos { get; set; } = [];
+    [Parameter] public List<ActividadSalida> Actividades { get; set; } = [];
+
+    private readonly DestinoActividadGuardar alta = new();
+    private readonly DestinoActividadModificar edicion = new();
+    private MudForm _formulario = default!;
+    private string? error;
+    private bool guardando;
+
+    private bool EsEdicion => Item is not null;
+
+    protected override void OnInitialized()
+    {
+        if (Item is null) return;
+
+        edicion.DuracionMinutos = Item.DuracionMinutos;
+        edicion.PrecioBase = Item.PrecioBase;
+        edicion.IdEstado = Item.IdEstado;
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task GuardarAsync()
+    {
+        if (guardando) return;
+
+        await _formulario.ValidateAsync();
+        if (!_formulario.IsValid) return;
+
+        guardando = true;
+        error = null;
+
+        try
+        {
+            if (Item is null)
+                await AsignacionService.CrearAsync(alta);
+            else
+                await AsignacionService.ModificarAsync(Item.IdDestinoActividad, edicion);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+}

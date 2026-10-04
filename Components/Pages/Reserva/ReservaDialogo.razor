@@ -1,0 +1,219 @@
+@using ExploreWayApp.DTOs.DestinoActividad
+@using ExploreWayApp.DTOs.guia
+@using ExploreWayApp.DTOs.reserva
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Reserva
+@using ExploreWayApp.Servicios.Guia
+@using ExploreWayApp.Servicios.DestinoActividad
+
+@inject IReservaService ReservaService
+@inject IGuiaService GuiaService
+@inject IDestinoActividadService DestinoActividadService
+
+<MudDialog Class="exploreway-destino-dialogo">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.EventAvailable" Style="color: var(--ew-primary);" />
+            <MudText Typo="Typo.h6" Class="font-weight-bold">Nueva reserva</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        @if (error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4" Style="border-radius: 12px;">
+                @error
+            </MudAlert>
+        }
+
+        <MudForm @ref="_formulario" Model="modelo">
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudSelect T="int?"
+                               Label="Cliente"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               AnchorOrigin="Origin.BottomCenter"
+                               Disabled="cargando"
+                               @bind-Value="modelo.IdCliente"
+                               For="@(() => modelo.IdCliente)">
+                        @foreach (var c in _clientes)
+                        {
+                            <MudSelectItem T="int?" Value="@c.IdCliente">@c.NombreCompleto</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSelect T="int?"
+                               Label="Guía"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               AnchorOrigin="Origin.BottomCenter"
+                               Disabled="cargando"
+                               @bind-Value="modelo.IdGuia"
+                               For="@(() => modelo.IdGuia)">
+                        @foreach (var g in _guias)
+                        {
+                            <MudSelectItem T="int?" Value="@g.IdGuia">@($"{g.NombrePersona} {g.ApellidoPersona}".Trim())</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSelect T="int?"
+                               Label="Destino y actividad"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               AnchorOrigin="Origin.BottomCenter"
+                               Disabled="cargando"
+                               @bind-Value="modelo.IdDestinoActividad"
+                               For="@(() => modelo.IdDestinoActividad)">
+                        @foreach (var o in _ofertas)
+                        {
+                            <MudSelectItem T="int?" Value="@o.IdDestinoActividad">@($"{o.NombreDestino} · {o.NombreActividad}")</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker Label="Fecha del recorrido"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Editable="true"
+                                   DateFormat="dd/MM/yyyy"
+                                   MinDate="DateTime.Today"
+                                   Required="true"
+                                   RequiredError="La fecha del recorrido es obligatoria."
+                                   @bind-Date="_fecha" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTimePicker Label="Hora de inicio"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Editable="true"
+                                   Required="true"
+                                   RequiredError="La hora de inicio es obligatoria."
+                                   @bind-Time="_hora" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudNumericField T="int?"
+                                     Label="Cantidad de personas"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
+                                     Min="1"
+                                     @bind-Value="modelo.CantidadPersonas"
+                                     For="@(() => modelo.CantidadPersonas)" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Observaciones (opcional)"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Lines="3"
+                                  Counter="500"
+                                  MaxLength="500"
+                                  @bind-Value="modelo.Observaciones"
+                                  For="@(() => modelo.Observaciones)" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Class="text-none" Disabled="guardando" OnClick="Cancelar">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Class="rounded-pill px-6 text-none exploreway-btn-auth"
+                   Disabled="guardando || cargando"
+                   OnClick="GuardarAsync">
+            @if (guardando)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="color: #ffffff;" />
+            }
+            @(guardando ? "Guardando…" : "Crear reserva")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private readonly ReservaGuardar modelo = new();
+    private List<ClienteResumen> _clientes = [];
+    private List<GuiaSalida> _guias = [];
+    private List<DestinoActividadSalida> _ofertas = [];
+    private DateTime? _fecha;
+    private TimeSpan? _hora;
+    private MudForm _formulario = default!;
+    private string? error;
+    private bool guardando;
+    private bool cargando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _clientes = (await ReservaService.ListarClientesAsync()).OrderBy(c => c.NombreCompleto).ToList();
+            _guias = (await GuiaService.ListarAsync()).OrderBy(g => g.NombrePersona).ThenBy(g => g.ApellidoPersona).ToList();
+            _ofertas = (await DestinoActividadService.ListarAsync())
+                .Where(o => string.Equals(o.NombreEstado?.Trim(), "Activo", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(o => o.NombreDestino).ThenBy(o => o.NombreActividad)
+                .ToList();
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task GuardarAsync()
+    {
+        if (guardando) return;
+
+        await _formulario.ValidateAsync();
+        if (!_formulario.IsValid) return;
+
+        if (_fecha is null || _hora is null)
+        {
+            error = "Indicá la fecha y la hora del recorrido.";
+            return;
+        }
+
+        if (_fecha.Value.Date < DateTime.Today)
+        {
+            error = "La fecha del recorrido no puede ser anterior a hoy.";
+            return;
+        }
+
+        guardando = true;
+        error = null;
+
+        try
+        {
+            modelo.FechaRecorrido = DateOnly.FromDateTime(_fecha.Value);
+            modelo.HoraInicio = TimeOnly.FromTimeSpan(_hora.Value);
+            modelo.Observaciones = string.IsNullOrWhiteSpace(modelo.Observaciones) ? null : modelo.Observaciones.Trim();
+
+            await ReservaService.CrearAsync(modelo);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+}

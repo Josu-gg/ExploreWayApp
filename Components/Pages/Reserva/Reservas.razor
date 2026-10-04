@@ -1,0 +1,360 @@
+@page "/admin/reservas"
+@layout AdminLayout
+
+@using System.Globalization
+@using Microsoft.AspNetCore.Components.Authorization
+@using ExploreWayApp.DTOs.Comun
+@using ExploreWayApp.DTOs.reserva
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Reserva
+@using ExploreWayApp.Servicios.Estado
+
+@inject IReservaService ReservaService
+@inject IEstadoService EstadoService
+@inject IDialogService Dialogos
+@inject ISnackbar Snackbar
+
+<PageTitle>Reservas — ExploreWay</PageTitle>
+
+<div class="exploreway-admin">
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+
+        <AuthorizeView>
+            <NotAuthorized>
+                <div class="exploreway-admin-vacio">
+                    <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Style="color: var(--ew-primary);" />
+                    <MudText Typo="Typo.h5" Class="font-weight-bold mt-3">Iniciá sesión para gestionar reservas</MudText>
+                    <MudText Typo="Typo.body2" Class="mb-5" Style="color: #64748b;">
+                        Esta sección es solo para usuarios autenticados.
+                    </MudText>
+                    <MudButton Variant="Variant.Filled" Href="/login" Class="rounded-pill px-6 text-none exploreway-btn-auth">
+                        Iniciar sesión
+                    </MudButton>
+                </div>
+            </NotAuthorized>
+
+            <Authorized Context="_auth">
+                <header class="exploreway-admin-head">
+                    <div>
+                        <span class="exploreway-admin-kicker">Operación · @_reservas.Count registradas</span>
+                        <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Reservas</MudText>
+                        <MudText Typo="Typo.body1" Class="exploreway-section-lead">
+                            Creá y seguí las reservas de recorridos de tus clientes.
+                        </MudText>
+                    </div>
+                    <MudButton Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               Class="rounded-pill px-6 py-2 text-none exploreway-btn-auth"
+                               Disabled="cargando"
+                               OnClick="NuevaAsync">
+                        Nueva reserva
+                    </MudButton>
+                </header>
+
+                <div class="exploreway-admin-filtros">
+                    <MudTextField @bind-Value="_busqueda"
+                                  Placeholder="Buscar por cliente, guía, destino o actividad"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  AdornmentColor="Color.Primary"
+                                  Immediate="true"
+                                  Clearable="true"
+                                  Class="exploreway-admin-buscar" />
+
+                    <MudChipSet T="int?" @bind-SelectedValue="_filtroEstado" SelectionMode="SelectionMode.SingleSelection"
+                                CheckMark="false">
+                        <MudChip T="int?" Value="@((int?)null)" Default="true" Variant="Variant.Outlined" Color="Color.Primary">
+                            Todas
+                        </MudChip>
+                        @foreach (var estado in _estados)
+                        {
+                            <MudChip T="int?" Value="@estado.IdEstado" Variant="Variant.Outlined" Color="Color.Primary">
+                                @estado.NombreEstado
+                            </MudChip>
+                        }
+                    </MudChipSet>
+                </div>
+
+                @if (error is not null)
+                {
+                    <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;"
+                              ContentAlignment="HorizontalAlignment.Start">
+                        <div class="d-flex align-center justify-space-between flex-wrap gap-3">
+                            <span>@error</span>
+                            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error"
+                                       Class="text-none" OnClick="CargarAsync">
+                                Reintentar
+                            </MudButton>
+                        </div>
+                    </MudAlert>
+                }
+
+                <MudTable Items="Filtradas"
+                          Loading="cargando"
+                          LoadingProgressColor="Color.Primary"
+                          Hover="true"
+                          Breakpoint="Breakpoint.Sm"
+                          Elevation="0"
+                          RowsPerPage="10"
+                          Class="exploreway-admin-tabla">
+                    <HeaderContent>
+                        <MudTh><MudTableSortLabel T="ReservaSalida" SortBy="r => r.IdReserva" InitialDirection="SortDirection.Descending">Reserva</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel T="ReservaSalida" SortBy="r => r.NombreDestino">Recorrido</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel T="ReservaSalida" SortBy="r => r.FechaRecorrido.ToDateTime(r.HoraInicio)">Fecha y horario</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel T="ReservaSalida" SortBy="r => r.NombreGuia + r.ApellidoGuia">Guía</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel T="ReservaSalida" SortBy="r => r.CantidadPersonas">Personas</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel T="ReservaSalida" SortBy="r => r.PrecioTotal">Total</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel T="ReservaSalida" SortBy="r => r.NombreEstado">Estado</MudTableSortLabel></MudTh>
+                        <MudTh Style="text-align: right;">Acciones</MudTh>
+                    </HeaderContent>
+
+                    <RowTemplate>
+                        <MudTd DataLabel="Reserva">
+                            <div class="exploreway-admin-nombre">#@context.IdReserva</div>
+                            <div class="exploreway-admin-desc">@NombreCliente(context)</div>
+                        </MudTd>
+                        <MudTd DataLabel="Recorrido">
+                            <div class="exploreway-admin-nombre">@context.NombreDestino</div>
+                            <div class="exploreway-admin-desc">@context.NombreActividad</div>
+                        </MudTd>
+                        <MudTd DataLabel="Fecha y horario">
+                            <div>@context.FechaRecorrido.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)</div>
+                            <div class="exploreway-admin-desc">@context.HoraInicio.ToString("HH:mm", CultureInfo.InvariantCulture)–@context.HoraFin.ToString("HH:mm", CultureInfo.InvariantCulture)</div>
+                        </MudTd>
+                        <MudTd DataLabel="Guía">@NombreGuia(context)</MudTd>
+                        <MudTd DataLabel="Personas">@context.CantidadPersonas</MudTd>
+                        <MudTd DataLabel="Total">$ @context.PrecioTotal.ToString("0.00", CultureInfo.InvariantCulture)</MudTd>
+                        <MudTd DataLabel="Estado">
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                     Color="@ColorEstado(context.NombreEstado)" Class="ma-0">
+                                @(string.IsNullOrWhiteSpace(context.NombreEstado) ? $"Estado {context.IdEstado}" : context.NombreEstado)
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Acciones" Style="text-align: right; white-space: nowrap;">
+                            @if (EsEstado(context, "Pendiente"))
+                            {
+                                <MudTooltip Text="Confirmar">
+                                    <MudIconButton Icon="@Icons.Material.Outlined.CheckCircle" Size="Size.Small" Color="Color.Info"
+                                                   aria-label="@($"Confirmar reserva {context.IdReserva}")"
+                                                   OnClick="@(() => AvanzarAsync(context, "Aceptada"))" />
+                                </MudTooltip>
+                            }
+                            @if (EsEstado(context, "Aceptada"))
+                            {
+                                <MudTooltip Text="Completar">
+                                    <MudIconButton Icon="@Icons.Material.Outlined.TaskAlt" Size="Size.Small" Color="Color.Success"
+                                                   aria-label="@($"Completar reserva {context.IdReserva}")"
+                                                   OnClick="@(() => AvanzarAsync(context, "Completada"))" />
+                                </MudTooltip>
+                            }
+                            @if (EsEstado(context, "Pendiente") || EsEstado(context, "Aceptada"))
+                            {
+                                <MudTooltip Text="Cancelar">
+                                    <MudIconButton Icon="@Icons.Material.Outlined.Cancel" Size="Size.Small" Color="Color.Error"
+                                                   aria-label="@($"Cancelar reserva {context.IdReserva}")"
+                                                   OnClick="@(() => CancelarAsync(context))" />
+                                </MudTooltip>
+                            }
+                            else if (!EsEstado(context, "Pendiente"))
+                            {
+                                <MudTooltip Text="Sin acciones disponibles">
+                                    <MudIconButton Icon="@Icons.Material.Outlined.Block" Size="Size.Small" Disabled="true"
+                                                   aria-label="Sin acciones disponibles" />
+                                </MudTooltip>
+                            }
+                        </MudTd>
+                    </RowTemplate>
+
+                    <NoRecordsContent>
+                        <div class="exploreway-admin-vacio">
+                            <MudIcon Icon="@Icons.Material.Outlined.EventNote" Size="Size.Large" Style="color: var(--ew-teal);" />
+                            @if (_reservas.Count == 0)
+                            {
+                                <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">Todavía no hay reservas</MudText>
+                                <MudText Typo="Typo.body2" Style="color: #64748b;">Creá la primera con el botón “Nueva reserva”.</MudText>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">Sin resultados</MudText>
+                                <MudText Typo="Typo.body2" Style="color: #64748b;">Ninguna reserva coincide con los filtros aplicados.</MudText>
+                            }
+                        </div>
+                    </NoRecordsContent>
+
+                    <LoadingContent>
+                        <MudText Typo="Typo.body2" Class="pa-6" Style="color: #64748b;">Cargando reservas…</MudText>
+                    </LoadingContent>
+
+                    <PagerContent>
+                        <MudTablePager RowsPerPageString="Filas por página:"
+                                       InfoFormat="{first_item}-{last_item} de {all_items}"
+                                       PageSizeOptions="new[] { 10, 25, 50 }" />
+                    </PagerContent>
+                </MudTable>
+            </Authorized>
+        </AuthorizeView>
+    </MudContainer>
+</div>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> EstadoAuth { get; set; } = default!;
+
+    private List<ReservaSalida> _reservas = [];
+    private List<EstadoSalida> _estados = [];
+    private string _busqueda = string.Empty;
+    private int? _filtroEstado;
+    private bool cargando;
+    private string? error;
+
+    private IEnumerable<ReservaSalida> Filtradas => _reservas.Where(r =>
+        (_filtroEstado is null || r.IdEstado == _filtroEstado) &&
+        (string.IsNullOrWhiteSpace(_busqueda) ||
+         Contiene(NombreCliente(r)) || Contiene(NombreGuia(r)) ||
+         Contiene(r.NombreDestino) || Contiene(r.NombreActividad)));
+
+    private bool Contiene(string? texto) =>
+        texto?.Contains(_busqueda.Trim(), StringComparison.OrdinalIgnoreCase) == true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await EstadoAuth;
+        if (auth.User.Identity?.IsAuthenticated == true)
+            await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+
+        try
+        {
+            _reservas = await ReservaService.ListarAsync();
+            _estados = await CargarEstadosAsync();
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    // Si el catálogo no está disponible, se arma con los estados que traen las reservas.
+    private async Task<List<EstadoSalida>> CargarEstadosAsync()
+    {
+        try
+        {
+            var estados = await EstadoService.ListarPorTipoAsync("reservas");
+            if (estados.Count > 0) return estados;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException) { }
+
+        return _reservas
+            .GroupBy(r => r.IdEstado)
+            .Select(g => new EstadoSalida
+            {
+                IdEstado = g.Key,
+                NombreEstado = string.IsNullOrWhiteSpace(g.First().NombreEstado) ? $"Estado {g.Key}" : g.First().NombreEstado
+            })
+            .OrderBy(e => e.NombreEstado)
+            .ToList();
+    }
+
+    private static string NombreCliente(ReservaSalida r) => $"{r.NombreCliente} {r.ApellidoCliente}".Trim();
+
+    private static string NombreGuia(ReservaSalida r) => $"{r.NombreGuia} {r.ApellidoGuia}".Trim();
+
+    private static bool EsEstado(ReservaSalida r, string nombre) =>
+        string.Equals(r.NombreEstado?.Trim(), nombre, StringComparison.OrdinalIgnoreCase);
+
+    private static Color ColorEstado(string? estado) => estado?.Trim().ToLowerInvariant() switch
+    {
+        "pendiente" => Color.Warning,
+        "aceptada" => Color.Info,
+        "completada" => Color.Success,
+        "cancelada" => Color.Error,
+        null or "" => Color.Default,
+        _ => Color.Default
+    };
+
+    private async Task NuevaAsync()
+    {
+        var opciones = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+
+        var dialogo = await Dialogos.ShowAsync<ReservaDialogo>((string?)null, opciones);
+        var resultado = await dialogo.Result;
+        if (resultado is null || resultado.Canceled) return;
+
+        Snackbar.Add("Reserva creada.", Severity.Success);
+        await CargarAsync();
+    }
+
+    private async Task AvanzarAsync(ReservaSalida reserva, string nuevoEstado)
+    {
+        var objetivo = _estados.FirstOrDefault(e =>
+            string.Equals(e.NombreEstado?.Trim(), nuevoEstado, StringComparison.OrdinalIgnoreCase));
+
+        if (objetivo is null)
+        {
+            Snackbar.Add($"No se encontró el estado “{nuevoEstado}” en el catálogo.", Severity.Warning);
+            return;
+        }
+
+        var confirmar = await Dialogos.ShowMessageBoxAsync(
+            nuevoEstado == "Aceptada" ? "Confirmar reserva" : "Completar reserva",
+            nuevoEstado == "Aceptada"
+                ? $"¿Querés confirmar la reserva #{reserva.IdReserva} de {NombreCliente(reserva)}?"
+                : $"¿Querés marcar como completada la reserva #{reserva.IdReserva}? Ya no podrá modificarse.",
+            yesText: nuevoEstado == "Aceptada" ? "Confirmar" : "Completar", cancelText: "Cancelar");
+        if (confirmar != true) return;
+
+        try
+        {
+            await ReservaService.CambiarEstadoAsync(reserva.IdReserva,
+                new CambioEstadoModificar { IdEstado = objetivo.IdEstado });
+            Snackbar.Add(nuevoEstado == "Aceptada" ? "Reserva confirmada." : "Reserva completada.", Severity.Success);
+            await CargarAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("No se pudo conectar con el servidor.", Severity.Error);
+        }
+    }
+
+    private async Task CancelarAsync(ReservaSalida reserva)
+    {
+        var confirmar = await Dialogos.ShowMessageBoxAsync(
+            "Cancelar reserva",
+            $"¿Seguro que querés cancelar la reserva #{reserva.IdReserva} de {NombreCliente(reserva)}? Esta acción no se puede deshacer.",
+            yesText: "Cancelar reserva", cancelText: "Volver");
+        if (confirmar != true) return;
+
+        try
+        {
+            await ReservaService.CancelarAsync(reserva.IdReserva);
+            Snackbar.Add("Reserva cancelada.", Severity.Success);
+            await CargarAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("No se pudo conectar con el servidor.", Severity.Error);
+        }
+    }
+}

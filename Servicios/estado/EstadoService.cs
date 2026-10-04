@@ -11,6 +11,9 @@ public sealed class EstadoService(HttpClient http) : IEstadoService
     public async Task<List<EstadoSalida>> ListarAsync() =>
         await LeerAsync<List<EstadoSalida>>(Url) ?? [];
 
+    public async Task<List<EstadoSalida>> ListarPorTipoAsync(string tipo) =>
+        await LeerAsync<List<EstadoSalida>>($"{Url}/tipo/{Uri.EscapeDataString(tipo)}") ?? [];
+
     public Task<EstadoSalida?> BuscarPorIdAsync(int id) =>
         LeerAsync<EstadoSalida>($"{Url}/{id}");
 

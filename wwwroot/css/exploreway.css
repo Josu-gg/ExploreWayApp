@@ -1597,3 +1597,120 @@ html {
             margin-bottom: 0.7rem;
         }
 }
+
+/* ==========================================================================
+   Vistas de administración (listados CRUD). Mismo diseño que Destinos.
+   ========================================================================== */
+.exploreway-admin {
+    padding: 2rem 0 4rem;
+}
+
+.exploreway-admin-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.exploreway-admin-kicker {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    font-family: var(--ew-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ew-green-ink);
+}
+
+.exploreway-admin-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.exploreway-admin-buscar {
+    flex: 1 1 320px;
+    max-width: 480px;
+    background: #ffffff;
+    border-radius: 4px;
+}
+
+.exploreway-admin-selector {
+    flex: 0 1 320px;
+    background: #ffffff;
+    border-radius: 4px;
+}
+
+.exploreway-admin-tabla {
+    border: 1px solid var(--ew-line);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.exploreway-admin-tabla .mud-table-head th {
+    font-family: var(--ew-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #475569;
+    background: #f8fafc;
+}
+
+.exploreway-admin-nombre {
+    font-weight: 600;
+    color: var(--ew-ink);
+}
+
+.exploreway-admin-desc {
+    max-width: 46ch;
+    margin-top: 2px;
+    font-size: 0.85rem;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.exploreway-admin-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 4rem 1rem;
+}
+
+/* Galería de imágenes de destino */
+.exploreway-admin-galeria {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.25rem;
+}
+
+.exploreway-admin-imagen {
+    border: 1px solid var(--ew-line);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.exploreway-admin-imagen img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    background: #f1f5f9;
+}
+
+.exploreway-admin-imagen-pie {
+    padding: 0.75rem 0.9rem;
+}
+
+@media (max-width: 599px) {
+    .exploreway-admin-desc {
+        max-width: 60vw;
+    }
+}

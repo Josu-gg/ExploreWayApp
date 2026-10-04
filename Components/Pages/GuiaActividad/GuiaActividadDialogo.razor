@@ -1,0 +1,115 @@
+@using ExploreWayApp.DTOs.actividad
+@using ExploreWayApp.DTOs.guia
+@using ExploreWayApp.DTOs.GuiaActividad
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.GuiaActividad
+
+@inject IGuiaActividadService AsignacionService
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.AssignmentInd" Style="color: var(--ew-primary);" />
+            <MudText Typo="Typo.h6" Class="font-weight-bold">Nueva asignación</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        @if (error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4" Style="border-radius: 12px;">
+                @error
+            </MudAlert>
+        }
+
+        <MudForm @ref="_formulario" Model="modelo">
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudSelect T="int?"
+                               Label="Guía"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               AnchorOrigin="Origin.BottomCenter"
+                               @bind-Value="modelo.IdGuia"
+                               For="@(() => modelo.IdGuia)">
+                        @foreach (var g in Guias)
+                        {
+                            <MudSelectItem T="int?" Value="@g.IdGuia">@($"{g.NombrePersona} {g.ApellidoPersona}".Trim())</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSelect T="int?"
+                               Label="Actividad"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               AnchorOrigin="Origin.BottomCenter"
+                               @bind-Value="modelo.IdActividad"
+                               For="@(() => modelo.IdActividad)">
+                        @foreach (var a in Actividades)
+                        {
+                            <MudSelectItem T="int?" Value="@a.IdActividad">@a.Nombre</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Class="text-none" Disabled="guardando" OnClick="Cancelar">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Class="rounded-pill px-6 text-none exploreway-btn-auth"
+                   Disabled="guardando"
+                   OnClick="GuardarAsync">
+            @if (guardando)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="color: #ffffff;" />
+            }
+            @(guardando ? "Guardando…" : "Guardar")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public List<GuiaSalida> Guias { get; set; } = [];
+    [Parameter] public List<ActividadSalida> Actividades { get; set; } = [];
+
+    private readonly GuiaActividadGuardar modelo = new();
+    private MudForm _formulario = default!;
+    private string? error;
+    private bool guardando;
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task GuardarAsync()
+    {
+        if (guardando) return;
+
+        await _formulario.ValidateAsync();
+        if (!_formulario.IsValid) return;
+
+        guardando = true;
+        error = null;
+
+        try
+        {
+            await AsignacionService.CrearAsync(modelo);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+}

@@ -1,0 +1,142 @@
+@using ExploreWayApp.DTOs.Destino
+@using ExploreWayApp.DTOs.guia
+@using ExploreWayApp.DTOs.GuiaDestino
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.GuiaDestino
+@using ExploreWayApp.Servicios.Guia
+@using ExploreWayApp.Servicios.Destino
+
+@inject IGuiaDestinoService GuiaDestinoService
+@inject IGuiaService GuiaService
+@inject IDestinoService DestinoService
+
+<MudDialog Class="exploreway-destino-dialogo">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.AddLocationAlt" Style="color: var(--ew-primary);" />
+            <MudText Typo="Typo.h6" Class="font-weight-bold">Asignar destino a guía</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        @if (error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4" Style="border-radius: 12px;">
+                @error
+            </MudAlert>
+        }
+
+        <MudForm @ref="_formulario" Model="modelo">
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudSelect T="int?"
+                               Label="Guía"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               AnchorOrigin="Origin.BottomCenter"
+                               Disabled="cargando"
+                               @bind-Value="modelo.IdGuia"
+                               For="@(() => modelo.IdGuia)">
+                        @foreach (var g in _guias)
+                        {
+                            <MudSelectItem T="int?" Value="@g.IdGuia">@($"{g.NombrePersona} {g.ApellidoPersona}".Trim())</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSelect T="int?"
+                               Label="Destino"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               AnchorOrigin="Origin.BottomCenter"
+                               Disabled="cargando"
+                               @bind-Value="modelo.IdDestino"
+                               For="@(() => modelo.IdDestino)">
+                        @foreach (var d in _destinos)
+                        {
+                            <MudSelectItem T="int?" Value="@d.IdDestino">@d.Nombre</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Class="text-none" Disabled="guardando" OnClick="Cancelar">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Class="rounded-pill px-6 text-none exploreway-btn-auth"
+                   Disabled="guardando || cargando"
+                   OnClick="GuardarAsync">
+            @if (guardando)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="color: #ffffff;" />
+            }
+            @(guardando ? "Guardando…" : "Asignar")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private readonly GuiaDestinoGuardar modelo = new();
+    private List<GuiaSalida> _guias = [];
+    private List<DestinoSalidaDto> _destinos = [];
+    private MudForm _formulario = default!;
+    private string? error;
+    private bool guardando;
+    private bool cargando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _guias = (await GuiaService.ListarAsync()).OrderBy(g => g.NombrePersona).ThenBy(g => g.ApellidoPersona).ToList();
+            _destinos = (await DestinoService.ListarAsync()).OrderBy(d => d.Nombre).ToList();
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task GuardarAsync()
+    {
+        if (guardando) return;
+
+        await _formulario.ValidateAsync();
+        if (!_formulario.IsValid) return;
+
+        guardando = true;
+        error = null;
+
+        try
+        {
+            await GuiaDestinoService.CrearAsync(modelo);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+}

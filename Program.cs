@@ -4,6 +4,13 @@ using ExploreWayApp.Config;
 using ExploreWayApp.Servicios;
 using ExploreWayApp.Servicios.actividad;
 using ExploreWayApp.Servicios.Destino;
+using ExploreWayApp.Servicios.DestinoActividad;
+using ExploreWayApp.Servicios.Guia;
+using ExploreWayApp.Servicios.GuiaActividad;
+using ExploreWayApp.Servicios.GuiaDestino;
+using ExploreWayApp.Servicios.ImagenDestino;
+using ExploreWayApp.Servicios.Imagenes;
+using ExploreWayApp.Servicios.Reserva;
 using ExploreWayApp.Servicios.Estado;
 using ExploreWayApp.Servicios.Rol;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -19,6 +26,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddMudServices();
 
 builder.Services.Configure<ApiOptions>(builder.Configuration.GetSection("ExploreWayApi"));
+builder.Services.Configure<CloudinaryOptions>(builder.Configuration.GetSection("Cloudinary"));
 
 builder.Services.AddScoped<SesionUsuario>();
 builder.Services.AddScoped<ExploreWayAuthStateProvider>();
@@ -45,6 +53,13 @@ builder.Services.AddScoped<IDestinoService, DestinoService>();
 builder.Services.AddScoped<IActividadService, ActividadService>();
 builder.Services.AddScoped<IEstadoService, EstadoService>();
 builder.Services.AddScoped<IRolService, RolService>();
+builder.Services.AddScoped<IDestinoActividadService, DestinoActividadService>();
+builder.Services.AddScoped<IGuiaService, GuiaService>();
+builder.Services.AddScoped<IGuiaActividadService, GuiaActividadService>();
+builder.Services.AddScoped<IGuiaDestinoService, GuiaDestinoService>();
+builder.Services.AddScoped<IImagenDestinoService, ImagenDestinoService>();
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+builder.Services.AddScoped<IReservaService, ReservaService>();
 
 
 

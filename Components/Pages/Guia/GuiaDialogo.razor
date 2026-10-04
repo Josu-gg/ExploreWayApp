@@ -1,0 +1,252 @@
+@using ExploreWayApp.DTOs.guia
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Guia
+
+@inject IGuiaService GuiaService
+
+<MudDialog Class="exploreway-guia-dialogo">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@(EsEdicion ? Icons.Material.Filled.ManageAccounts : Icons.Material.Filled.PersonAdd)"
+                     Style="color: var(--ew-primary);" />
+            <MudText Typo="Typo.h6" Class="font-weight-bold">
+                @(EsEdicion ? "Editar guía" : "Nuevo guía")
+            </MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        @if (error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4" Style="border-radius: 12px;">
+                @error
+            </MudAlert>
+        }
+
+        @if (EsEdicion)
+        {
+            <MudText Typo="Typo.subtitle2" Class="mb-3" Style="color: #64748b;">
+                @GuiaItem!.NombrePersona @GuiaItem.ApellidoPersona
+            </MudText>
+
+            <MudForm @ref="_formulario" Model="edicion">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12">
+                        <MudTextField Label="Biografía (opcional)" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Lines="3" Counter="500" MaxLength="500"
+                                      @bind-Value="edicion.Biografia" For="@(() => edicion.Biografia)" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="Experiencia (opcional)" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Lines="3" Counter="500" MaxLength="500"
+                                      @bind-Value="edicion.Experiencia" For="@(() => edicion.Experiencia)" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="Estudios (opcional)" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Counter="200" MaxLength="200"
+                                      @bind-Value="edicion.Estudios" For="@(() => edicion.Estudios)" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudSwitch T="bool?" Color="Color.Primary" Label="Tiene primeros auxilios"
+                                   @bind-Value="edicion.PrimerosAuxilios" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudSwitch T="bool?" Color="Color.Primary" Label="Disponible"
+                                   @bind-Value="edicion.EstadoDisponibilidad" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudSelect T="int?" Label="Estado" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                   AnchorOrigin="Origin.BottomCenter"
+                                   @bind-Value="edicion.IdEstado" For="@(() => edicion.IdEstado)">
+                            @foreach (var estado in Estados)
+                            {
+                                <MudSelectItem T="int?" Value="@estado.IdEstado">@estado.NombreEstado</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
+        }
+        else
+        {
+            <MudForm @ref="_formulario" Model="registro">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Datos personales</MudText>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Nombre" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="100"
+                                      @bind-Value="registro.Nombre" For="@(() => registro.Nombre)" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Apellido" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="100"
+                                      @bind-Value="registro.Apellido" For="@(() => registro.Apellido)" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Teléfono" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="20"
+                                      InputType="InputType.Telephone"
+                                      @bind-Value="registro.Telefono" For="@(() => registro.Telefono)" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudDatePicker Label="Fecha de nacimiento (opcional)" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                       Editable="true" Clearable="true" MaxDate="DateTime.Today"
+                                       @bind-Date="_fechaNacimiento" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="Dirección (opcional)" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="250"
+                                      @bind-Value="registro.Direccion" For="@(() => registro.Direccion)" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="URL de la foto (opcional)" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="500"
+                                      @bind-Value="registro.Foto" For="@(() => registro.Foto)" />
+                    </MudItem>
+
+                    <MudItem xs="12" Class="mt-2">
+                        <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Acceso</MudText>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="Correo electrónico" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="150"
+                                      InputType="InputType.Email"
+                                      @bind-Value="registro.Correo" For="@(() => registro.Correo)" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Contraseña" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="72"
+                                      InputType="InputType.Password"
+                                      @bind-Value="registro.Contra" For="@(() => registro.Contra)" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Confirmar contraseña" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="72"
+                                      InputType="InputType.Password"
+                                      @bind-Value="registro.ConfirmarContra" For="@(() => registro.ConfirmarContra)" />
+                    </MudItem>
+
+                    <MudItem xs="12" Class="mt-2">
+                        <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Perfil de guía</MudText>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="Biografía (opcional)" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Lines="3" Counter="500" MaxLength="500"
+                                      @bind-Value="registro.Biografia" For="@(() => registro.Biografia)" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="Experiencia (opcional)" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Lines="3" Counter="500" MaxLength="500"
+                                      @bind-Value="registro.Experiencia" For="@(() => registro.Experiencia)" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="Estudios (opcional)" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Counter="200" MaxLength="200"
+                                      @bind-Value="registro.Estudios" For="@(() => registro.Estudios)" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudSwitch T="bool?" Color="Color.Primary" Label="Tiene primeros auxilios"
+                                   @bind-Value="registro.PrimerosAuxilios" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudSwitch T="bool?" Color="Color.Primary" Label="Disponible"
+                                   @bind-Value="registro.EstadoDisponibilidad" />
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Class="text-none" Disabled="guardando" OnClick="Cancelar">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Class="rounded-pill px-6 text-none exploreway-btn-auth"
+                   Disabled="guardando"
+                   OnClick="GuardarAsync">
+            @if (guardando)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="color: #ffffff;" />
+            }
+            @(guardando ? "Guardando…" : "Guardar")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    // Guía a editar; null significa que se está registrando uno nuevo.
+    [Parameter] public GuiaSalida? GuiaItem { get; set; }
+    [Parameter] public List<EstadoSalida> Estados { get; set; } = [];
+
+    private readonly GuiaModificar edicion = new();
+    private readonly GuiaRegistroGuardar registro = new() { PrimerosAuxilios = false, EstadoDisponibilidad = true };
+    private DateTime? _fechaNacimiento;
+    private MudForm _formulario = default!;
+    private string? error;
+    private bool guardando;
+
+    private bool EsEdicion => GuiaItem is not null;
+
+    protected override void OnInitialized()
+    {
+        if (GuiaItem is null) return;
+
+        edicion.Biografia = GuiaItem.Biografia;
+        edicion.Experiencia = GuiaItem.Experiencia;
+        edicion.Estudios = GuiaItem.Estudios;
+        edicion.PrimerosAuxilios = GuiaItem.PrimerosAuxilios;
+        edicion.EstadoDisponibilidad = GuiaItem.EstadoDisponibilidad;
+        edicion.IdEstado = GuiaItem.IdEstado;
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private static string? Limpiar(string? texto) => string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
+
+    private async Task GuardarAsync()
+    {
+        if (guardando) return;
+
+        await _formulario.ValidateAsync();
+        if (!_formulario.IsValid) return;
+
+        guardando = true;
+        error = null;
+
+        try
+        {
+            if (GuiaItem is null)
+            {
+                registro.Nombre = registro.Nombre.Trim();
+                registro.Apellido = registro.Apellido.Trim();
+                registro.Telefono = registro.Telefono.Trim();
+                registro.Correo = registro.Correo.Trim();
+                registro.Direccion = Limpiar(registro.Direccion);
+                registro.Foto = Limpiar(registro.Foto);
+                registro.Biografia = Limpiar(registro.Biografia);
+                registro.Experiencia = Limpiar(registro.Experiencia);
+                registro.Estudios = Limpiar(registro.Estudios);
+                registro.FechaNacimiento = _fechaNacimiento is { } f ? DateOnly.FromDateTime(f) : null;
+
+                await GuiaService.RegistrarAsync(registro);
+            }
+            else
+            {
+                edicion.Biografia = Limpiar(edicion.Biografia);
+                edicion.Experiencia = Limpiar(edicion.Experiencia);
+                edicion.Estudios = Limpiar(edicion.Estudios);
+
+                await GuiaService.ModificarAsync(GuiaItem.IdGuia, edicion);
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+}

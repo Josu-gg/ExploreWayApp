@@ -1,0 +1,354 @@
+@page "/admin/imagenes-destino"
+@page "/admin/destinos/{IdDestino:int}/imagenes"
+@layout AdminLayout
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using ExploreWayApp.Config
+@using ExploreWayApp.DTOs.Destino
+@using ExploreWayApp.DTOs.ImagenDestino
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Destino
+@using ExploreWayApp.Servicios.ImagenDestino
+
+@inject IDestinoService DestinoService
+@inject IImagenDestinoService ImagenService
+@inject IDialogService Dialogos
+@inject ISnackbar Snackbar
+@inject NavigationManager Navegacion
+
+<PageTitle>Imágenes de destino — ExploreWay</PageTitle>
+
+<div class="exploreway-admin">
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+
+        <AuthorizeView>
+            <NotAuthorized>
+                <div class="exploreway-admin-vacio">
+                    <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Style="color: var(--ew-primary);" />
+                    <MudText Typo="Typo.h5" Class="font-weight-bold mt-3">Iniciá sesión para gestionar imágenes</MudText>
+                    <MudText Typo="Typo.body2" Class="mb-5" Style="color: #64748b;">
+                        Esta sección es solo para usuarios autenticados.
+                    </MudText>
+                    <MudButton Variant="Variant.Filled" Href="/login" Class="rounded-pill px-6 text-none exploreway-btn-auth">
+                        Iniciar sesión
+                    </MudButton>
+                </div>
+            </NotAuthorized>
+
+            <Authorized Context="_auth">
+                @* ENCABEZADO *@
+                <header class="exploreway-admin-head">
+                    <div>
+                        <span class="exploreway-admin-kicker">
+                            @if (IdDestino is null)
+                            {
+                                <text>Galería · Sin destino elegido</text>
+                            }
+                            else
+                            {
+                                <text>Galería · @_imagenes.Count de @MaximoImagenes imágenes</text>
+                            }
+                        </span>
+                        <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Imágenes de destino</MudText>
+                        <MudText Typo="Typo.body1" Class="exploreway-section-lead">
+                            Administrá la galería de fotos de cada destino y elegí su portada.
+                        </MudText>
+                    </div>
+                    <MudButton Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.AddPhotoAlternate"
+                               Class="rounded-pill px-6 py-2 text-none exploreway-btn-auth"
+                               Disabled="@(cargando || IdDestino is null || LimiteAlcanzado)"
+                               OnClick="NuevaAsync">
+                        Agregar imágenes
+                    </MudButton>
+                </header>
+
+                @* SELECTOR DE DESTINO *@
+                <div class="exploreway-admin-filtros">
+                    <MudSelect T="int?"
+                               Label="Destino"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               AnchorOrigin="Origin.BottomCenter"
+                               Class="exploreway-admin-selector"
+                               Value="IdDestino"
+                               ValueChanged="DestinoElegido">
+                        @foreach (var d in _destinos)
+                        {
+                            <MudSelectItem T="int?" Value="@((int?)d.IdDestino)">@d.Nombre</MudSelectItem>
+                        }
+                    </MudSelect>
+                    @if (LimiteAlcanzado)
+                    {
+                        <MudText Typo="Typo.body2" Style="color: #64748b;">
+                            Este destino alcanzó el máximo de @MaximoImagenes imágenes.
+                        </MudText>
+                    }
+                </div>
+
+                @if (error is not null)
+                {
+                    <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;"
+                              ContentAlignment="HorizontalAlignment.Start">
+                        <div class="d-flex align-center justify-space-between flex-wrap gap-3">
+                            <span>@error</span>
+                            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error"
+                                       Class="text-none" OnClick="ReintentarAsync">
+                                Reintentar
+                            </MudButton>
+                        </div>
+                    </MudAlert>
+                }
+
+                @* GALERÍA *@
+                @if (IdDestino is null)
+                {
+                    <div class="exploreway-admin-vacio">
+                        <MudIcon Icon="@Icons.Material.Outlined.PhotoLibrary" Size="Size.Large" Style="color: var(--ew-teal);" />
+                        <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">Elegí un destino para ver su galería</MudText>
+                        <MudText Typo="Typo.body2" Style="color: #64748b;">Usá el selector de arriba para empezar.</MudText>
+                    </div>
+                }
+                else if (cargando)
+                {
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+                    <MudText Typo="Typo.body2" Class="pa-6" Style="color: #64748b;">Cargando imágenes…</MudText>
+                }
+                else if (_imagenes.Count == 0 && error is null)
+                {
+                    <div class="exploreway-admin-vacio">
+                        <MudIcon Icon="@Icons.Material.Outlined.ImageNotSupported" Size="Size.Large" Style="color: var(--ew-teal);" />
+                        <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">Este destino todavía no tiene imágenes</MudText>
+                        <MudText Typo="Typo.body2" Style="color: #64748b;">Sumá la primera con el botón “Agregar imágenes”.</MudText>
+                    </div>
+                }
+                else
+                {
+                    <div class="exploreway-admin-galeria">
+                        @foreach (var imagen in _imagenes)
+                        {
+                            <div class="exploreway-admin-imagen" @key="imagen.IdImagen">
+                                <img src="@imagen.UrlImagen"
+                                     alt="@(string.IsNullOrWhiteSpace(imagen.Descripcion) ? "Imagen del destino" : imagen.Descripcion)"
+                                     loading="lazy"
+                                     onerror="this.style.visibility='hidden'" />
+                                <div class="exploreway-admin-imagen-pie">
+                                    @if (imagen.EsPrincipal)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
+                                                 Icon="@Icons.Material.Filled.Star" Class="ma-0 mb-2">
+                                            Portada
+                                        </MudChip>
+                                    }
+                                    <div class="exploreway-admin-desc" title="@imagen.Descripcion">
+                                        @(string.IsNullOrWhiteSpace(imagen.Descripcion) ? "Sin descripción" : imagen.Descripcion)
+                                    </div>
+                                    <div class="d-flex justify-end mt-1">
+                                        @if (!imagen.EsPrincipal)
+                                        {
+                                            <MudTooltip Text="Marcar como portada">
+                                                <MudIconButton Icon="@Icons.Material.Outlined.StarBorder" Size="Size.Small" Color="Color.Primary"
+                                                               aria-label="Marcar como portada"
+                                                               Disabled="@ocupado"
+                                                               OnClick="@(() => MarcarPrincipalAsync(imagen))" />
+                                            </MudTooltip>
+                                        }
+                                        <MudTooltip Text="Editar descripción">
+                                            <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small" Color="Color.Primary"
+                                                           aria-label="Editar descripción"
+                                                           OnClick="@(() => EditarAsync(imagen))" />
+                                        </MudTooltip>
+                                        <MudTooltip Text="Eliminar">
+                                            <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"
+                                                           aria-label="Eliminar imagen"
+                                                           Disabled="@ocupado"
+                                                           OnClick="@(() => EliminarAsync(imagen))" />
+                                        </MudTooltip>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </Authorized>
+        </AuthorizeView>
+    </MudContainer>
+</div>
+
+@code {
+    private const int MaximoImagenes = LimitesImagen.MaximoPorDestino;
+
+    [CascadingParameter] private Task<AuthenticationState> EstadoAuth { get; set; } = default!;
+
+    [Parameter] public int? IdDestino { get; set; }
+
+    private List<DestinoSalidaDto> _destinos = [];
+    private List<ImagenDestinoSalida> _imagenes = [];
+    private bool autenticado;
+    private bool cargando;
+    private bool ocupado;
+    private string? error;
+    private int? _destinoCargado;
+    private bool _destinosCargados;
+
+    private bool LimiteAlcanzado => IdDestino is not null && _imagenes.Count >= MaximoImagenes;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var auth = await EstadoAuth;
+        autenticado = auth.User.Identity?.IsAuthenticated == true;
+        if (!autenticado) return;
+
+        if (!_destinosCargados)
+            await CargarDestinosAsync();
+
+        if (IdDestino != _destinoCargado)
+            await CargarImagenesAsync();
+    }
+
+    private async Task CargarDestinosAsync()
+    {
+        try
+        {
+            var lista = await DestinoService.ListarAsync();
+            _destinos = lista.OrderBy(d => d.Nombre, StringComparer.CurrentCultureIgnoreCase).ToList();
+            _destinosCargados = true;
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+    }
+
+    private async Task CargarImagenesAsync()
+    {
+        _destinoCargado = IdDestino;
+        _imagenes = [];
+
+        if (IdDestino is not int id)
+        {
+            error = null;
+            return;
+        }
+
+        cargando = true;
+        error = null;
+
+        try
+        {
+            _imagenes = await ImagenService.ListarPorDestinoAsync(id);
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task ReintentarAsync()
+    {
+        if (!_destinosCargados)
+        {
+            error = null;
+            await CargarDestinosAsync();
+        }
+
+        await CargarImagenesAsync();
+    }
+
+    private void DestinoElegido(int? id)
+    {
+        Navegacion.NavigateTo(id is null ? "/admin/imagenes-destino" : $"/admin/destinos/{id}/imagenes");
+    }
+
+    private Task NuevaAsync() => AbrirDialogoAsync(null);
+
+    private Task EditarAsync(ImagenDestinoSalida imagen) => AbrirDialogoAsync(imagen);
+
+    private async Task AbrirDialogoAsync(ImagenDestinoSalida? imagen)
+    {
+        if (IdDestino is not int idDestino) return;
+
+        var parametros = new DialogParameters<ImagenDestinoDialogo>
+        {
+            { x => x.IdDestino, idDestino },
+            { x => x.CantidadActual, _imagenes.Count },
+            { x => x.Imagen, imagen }
+        };
+        var opciones = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+
+        var dialogo = await Dialogos.ShowAsync<ImagenDestinoDialogo>(null, parametros, opciones);
+        var resultado = await dialogo.Result;
+        if (resultado is null || resultado.Canceled) return;
+
+        Snackbar.Add(imagen is null ? "Imagen agregada." : "Descripción actualizada.", Severity.Success);
+        await CargarImagenesAsync();
+    }
+
+    private async Task MarcarPrincipalAsync(ImagenDestinoSalida imagen)
+    {
+        if (IdDestino is not int idDestino || ocupado) return;
+
+        ocupado = true;
+        try
+        {
+            await ImagenService.MarcarPrincipalAsync(idDestino, imagen.IdImagen);
+            Snackbar.Add("Portada actualizada.", Severity.Success);
+            await CargarImagenesAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("No se pudo conectar con el servidor.", Severity.Error);
+        }
+        finally
+        {
+            ocupado = false;
+        }
+    }
+
+    private async Task EliminarAsync(ImagenDestinoSalida imagen)
+    {
+        if (IdDestino is not int idDestino || ocupado) return;
+
+        var confirmar = await Dialogos.ShowMessageBoxAsync(
+            "Eliminar imagen",
+            "¿Seguro que querés eliminar esta imagen? Esta acción no se puede deshacer.",
+            yesText: "Eliminar", cancelText: "Cancelar");
+        if (confirmar != true) return;
+
+        ocupado = true;
+        try
+        {
+            await ImagenService.EliminarAsync(idDestino, imagen.IdImagen);
+            Snackbar.Add("Imagen eliminada.", Severity.Success);
+            await CargarImagenesAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("No se pudo conectar con el servidor.", Severity.Error);
+        }
+        finally
+        {
+            ocupado = false;
+        }
+    }
+}

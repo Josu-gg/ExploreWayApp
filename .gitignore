@@ -32,6 +32,7 @@
 appsettings.Local.json
 appsettings.Development.local.json
 secrets.json
+appsettings.json
 
 # Publicación
 publish/

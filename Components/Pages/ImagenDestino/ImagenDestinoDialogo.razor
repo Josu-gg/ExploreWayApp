@@ -1,0 +1,269 @@
+@using ExploreWayApp.Config
+@using ExploreWayApp.DTOs.ImagenDestino
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.ImagenDestino
+@using ExploreWayApp.Servicios.Imagenes
+
+@inject IImagenDestinoService ImagenService
+@inject ICloudinaryService CloudinaryService
+
+<MudDialog Class="exploreway-imagen-dialogo">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@(EsEdicion ? Icons.Material.Filled.Edit : Icons.Material.Filled.AddPhotoAlternate)"
+                     Style="color: var(--ew-primary);" />
+            <MudText Typo="Typo.h6" Class="font-weight-bold">
+                @(EsEdicion ? "Editar descripción" : "Agregar imágenes")
+            </MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        @if (error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4" Style="border-radius: 12px;">
+                @error
+            </MudAlert>
+        }
+
+        @if (EsEdicion)
+        {
+            <MudForm @ref="_formulario" Model="edicion">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12">
+                        <MudTextField Label="Descripción (opcional)"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Lines="3"
+                                      Counter="255"
+                                      MaxLength="255"
+                                      @bind-Value="edicion.Descripcion"
+                                      For="@(() => edicion.Descripcion)" />
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Class="mb-3" Style="color: #64748b;">
+                Podés elegir hasta @Disponibles @(Disponibles == 1 ? "imagen más" : "imágenes más")
+                (máximo @LimitesImagen.MaximoPorDestino por destino, @(LimitesImagen.TamanoMaximoBytes / 1024 / 1024) MB cada una).
+            </MudText>
+
+            <MudFileUpload T="IReadOnlyList<IBrowserFile>"
+                           Accept="image/png, image/jpeg, image/webp"
+                           MaximumFileCount="@Math.Max(Disponibles, 1)"
+                           Disabled="@(guardando || Disponibles <= 0)"
+                           FilesChanged="AlSeleccionar">
+                <ActivatorContent>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.CloudUpload"
+                               Class="text-none"
+                               Disabled="@(guardando || Disponibles <= 0)">
+                        Elegir imágenes
+                    </MudButton>
+                </ActivatorContent>
+            </MudFileUpload>
+
+            @if (_archivos.Count > 0)
+            {
+                <MudList T="string" Dense="true" Class="mt-3">
+                    @foreach (var archivo in _archivos)
+                    {
+                        <MudListItem T="string" Icon="@Icons.Material.Outlined.Image">
+                            <div class="d-flex align-center justify-space-between gap-2">
+                                <span>@archivo.Name <small style="color: #64748b;">(@Tamano(archivo.Size))</small></span>
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                         Color="@ColorEstado(archivo.Name)" Class="ma-0">
+                                    @TextoEstado(archivo.Name)
+                                </MudChip>
+                            </div>
+                        </MudListItem>
+                    }
+                </MudList>
+
+                <MudSwitch T="bool" Color="Color.Primary" Class="mt-2"
+                           Label="Usar la primera como portada"
+                           @bind-Value="_primeraPortada" Disabled="guardando" />
+            }
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Class="text-none" Disabled="guardando" OnClick="Cancelar">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Class="rounded-pill px-6 text-none exploreway-btn-auth"
+                   Disabled="@(guardando || (!EsEdicion && _archivos.Count == 0))"
+                   OnClick="GuardarAsync">
+            @if (guardando)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="color: #ffffff;" />
+            }
+            @(guardando ? (EsEdicion ? "Guardando…" : "Subiendo…") : (EsEdicion ? "Guardar" : "Subir imágenes"))
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public int IdDestino { get; set; }
+
+    // Imagen a editar; null significa que se están agregando imágenes nuevas.
+    [Parameter] public ImagenDestinoSalida? Imagen { get; set; }
+
+    // Imágenes que el destino ya tiene, para respetar el máximo.
+    [Parameter] public int CantidadActual { get; set; }
+
+    private readonly ImagenDestinoModificar edicion = new();
+    private readonly Dictionary<string, string> _resultados = [];
+    private MudForm _formulario = default!;
+    private List<IBrowserFile> _archivos = [];
+    private bool _primeraPortada;
+    private string? error;
+    private bool guardando;
+
+    private bool EsEdicion => Imagen is not null;
+    private int Disponibles => LimitesImagen.MaximoPorDestino - CantidadActual;
+
+    protected override void OnInitialized()
+    {
+        if (Imagen is not null)
+            edicion.Descripcion = Imagen.Descripcion;
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private static string? Limpiar(string? texto) => string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
+
+    private static string Tamano(long bytes) =>
+        bytes >= 1024 * 1024 ? $"{bytes / 1024d / 1024d:0.0} MB" : $"{Math.Max(1, bytes / 1024)} KB";
+
+    private void AlSeleccionar(IReadOnlyList<IBrowserFile> archivos)
+    {
+        _archivos = archivos.Take(Math.Max(Disponibles, 0)).ToList();
+        _resultados.Clear();
+        _primeraPortada = CantidadActual == 0;
+        error = archivos.Count > _archivos.Count
+            ? $"Solo se tomaron las primeras {_archivos.Count} imágenes (límite de {LimitesImagen.MaximoPorDestino} por destino)."
+            : null;
+    }
+
+    private string TextoEstado(string nombre) =>
+        _resultados.TryGetValue(nombre, out var resultado) ? resultado : "Pendiente";
+
+    private Color ColorEstado(string nombre) => TextoEstado(nombre) switch
+    {
+        "Subida" => Color.Success,
+        "Pendiente" => Color.Default,
+        _ => Color.Error
+    };
+
+    private async Task GuardarAsync()
+    {
+        if (guardando) return;
+
+        guardando = true;
+        error = null;
+
+        try
+        {
+            if (Imagen is not null)
+            {
+                await _formulario.ValidateAsync();
+                if (!_formulario.IsValid) return;
+
+                edicion.Descripcion = Limpiar(edicion.Descripcion);
+                await GuardarEdicionAsync(Imagen);
+                return;
+            }
+
+            if (_archivos.Count == 0)
+            {
+                error = "Elegí al menos una imagen.";
+                return;
+            }
+
+            await SubirArchivosAsync();
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private async Task GuardarEdicionAsync(ImagenDestinoSalida imagen)
+    {
+        try
+        {
+            await ImagenService.ActualizarDescripcionAsync(IdDestino, imagen.IdImagen, edicion);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+    }
+
+    // Sube cada archivo a Cloudinary y registra su URL en la API. Los que fallan quedan para reintentar.
+    private async Task SubirArchivosAsync()
+    {
+        var pendientes = _archivos.Where(a => TextoEstado(a.Name) != "Subida").ToList();
+        var esPrimera = _primeraPortada;
+        var subidas = 0;
+
+        foreach (var archivo in pendientes)
+        {
+            if (archivo.Size > LimitesImagen.TamanoMaximoBytes)
+            {
+                _resultados[archivo.Name] = "Supera el tamaño máximo";
+                continue;
+            }
+
+            try
+            {
+                await using var flujo = archivo.OpenReadStream(LimitesImagen.TamanoMaximoBytes);
+                var url = await CloudinaryService.SubirImagenDestinoAsync(flujo, archivo.Name, IdDestino);
+
+                await ImagenService.AgregarAsync(IdDestino, new ImagenDestinoGuardar
+                {
+                    UrlImagen = url,
+                    EsPrincipal = esPrimera
+                });
+
+                esPrimera = false;
+                subidas++;
+                _resultados[archivo.Name] = "Subida";
+            }
+            catch (ApiException ex)
+            {
+                _resultados[archivo.Name] = ex.Message;
+            }
+            catch (InvalidOperationException ex)
+            {
+                _resultados[archivo.Name] = ex.Message;
+            }
+            catch (Exception ex) when (ex is HttpRequestException or IOException)
+            {
+                _resultados[archivo.Name] = "Error de conexión";
+            }
+
+            StateHasChanged();
+        }
+
+        if (_archivos.All(a => TextoEstado(a.Name) == "Subida"))
+        {
+            MudDialog.Close(DialogResult.Ok(true));
+            return;
+        }
+
+        error = subidas > 0
+            ? "Algunas imágenes no se pudieron subir. Revisá el detalle y volvé a intentar con las pendientes."
+            : "No se pudo subir ninguna imagen. Revisá el detalle.";
+    }
+}
