@@ -5,7 +5,9 @@
 [Dd]ebug/
 [Rr]elease/
 [Aa]rtifacts/
-
+# Claude / Agents
+.claude/
+.agents/
 # Visual Studio
 .vs/
 *.user
