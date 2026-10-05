@@ -1,0 +1,187 @@
+@page "/guia/disponibilidad"
+@layout GuiaLayout
+
+@using System.Globalization
+@using ExploreWayApp.Auth
+@using ExploreWayApp.DTOs.DisponibilidadGuia
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.DisponibilidadGuia
+
+@inject IDisponibilidadGuiaService DisponibilidadService
+@inject SesionUsuario Sesion
+@inject IDialogService Dialogos
+@inject ISnackbar Snackbar
+
+<PageTitle>Mi disponibilidad — ExploreWay</PageTitle>
+
+<div class="exploreway-admin">
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+
+        <header class="exploreway-admin-head">
+            <div>
+                <span class="exploreway-admin-kicker">Agenda · @_franjas.Count vigentes</span>
+                <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Mi disponibilidad</MudText>
+                <MudText Typo="Typo.body1" Class="exploreway-section-lead">
+                    Definí los días y horarios en los que podés atender recorridos. Los clientes solo pueden reservarte dentro de estas franjas.
+                </MudText>
+            </div>
+            <MudButton Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Class="rounded-pill px-6 py-2 text-none exploreway-btn-auth"
+                       Disabled="cargando"
+                       OnClick="NuevaAsync">
+                Nueva franja
+            </MudButton>
+        </header>
+
+        @if (error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;"
+                      ContentAlignment="HorizontalAlignment.Start">
+                <div class="d-flex align-center justify-space-between flex-wrap gap-3">
+                    <span>@error</span>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error"
+                               Class="text-none" OnClick="CargarAsync">
+                        Reintentar
+                    </MudButton>
+                </div>
+            </MudAlert>
+        }
+
+        <MudTable Items="_franjas"
+                  Loading="cargando"
+                  LoadingProgressColor="Color.Primary"
+                  Hover="true"
+                  Breakpoint="Breakpoint.Sm"
+                  Elevation="0"
+                  RowsPerPage="10"
+                  Class="exploreway-admin-tabla">
+            <HeaderContent>
+                <MudTh><MudTableSortLabel T="DisponibilidadGuiaSalida" SortBy="d => d.Fecha.ToDateTime(d.HoraInicio)" InitialDirection="SortDirection.Ascending">Fecha</MudTableSortLabel></MudTh>
+                <MudTh>Horario</MudTh>
+                <MudTh>Estado</MudTh>
+                <MudTh Style="text-align: right;">Acciones</MudTh>
+            </HeaderContent>
+
+            <RowTemplate>
+                <MudTd DataLabel="Fecha">
+                    <div class="exploreway-admin-nombre">@context.Fecha.ToString("dddd dd/MM/yyyy", CultureInfo.GetCultureInfo("es"))</div>
+                </MudTd>
+                <MudTd DataLabel="Horario">
+                    @context.HoraInicio.ToString("HH:mm", CultureInfo.InvariantCulture)–@context.HoraFin.ToString("HH:mm", CultureInfo.InvariantCulture)
+                </MudTd>
+                <MudTd DataLabel="Estado">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Success" Class="ma-0">
+                        @(string.IsNullOrWhiteSpace(context.NombreEstado) ? $"Estado {context.IdEstado}" : context.NombreEstado)
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Acciones" Style="text-align: right; white-space: nowrap;">
+                    <MudTooltip Text="Editar">
+                        <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small" Color="Color.Primary"
+                                       aria-label="@($"Editar franja del {context.Fecha:dd/MM/yyyy}")"
+                                       OnClick="@(() => EditarAsync(context))" />
+                    </MudTooltip>
+                    <MudTooltip Text="Eliminar">
+                        <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"
+                                       aria-label="@($"Eliminar franja del {context.Fecha:dd/MM/yyyy}")"
+                                       OnClick="@(() => EliminarAsync(context))" />
+                    </MudTooltip>
+                </MudTd>
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <div class="exploreway-admin-vacio">
+                    <MudIcon Icon="@Icons.Material.Outlined.EventRepeat" Size="Size.Large" Style="color: var(--ew-teal);" />
+                    <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">Todavía no tenés franjas vigentes</MudText>
+                    <MudText Typo="Typo.body2" Style="color: #64748b;">Creá la primera con el botón “Nueva franja”.</MudText>
+                </div>
+            </NoRecordsContent>
+
+            <LoadingContent>
+                <MudText Typo="Typo.body2" Class="pa-6" Style="color: #64748b;">Cargando disponibilidad…</MudText>
+            </LoadingContent>
+
+            <PagerContent>
+                <MudTablePager RowsPerPageString="Filas por página:"
+                               InfoFormat="{first_item}-{last_item} de {all_items}"
+                               PageSizeOptions="new[] { 10, 25, 50 }" />
+            </PagerContent>
+        </MudTable>
+    </MudContainer>
+</div>
+
+@code {
+    private List<DisponibilidadGuiaSalida> _franjas = [];
+    private bool cargando;
+    private string? error;
+
+    protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+
+        try
+        {
+            _franjas = await DisponibilidadService.ListarPorGuiaAsync(Sesion.IdGuia);
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private Task NuevaAsync() => AbrirDialogoAsync(null);
+
+    private Task EditarAsync(DisponibilidadGuiaSalida franja) => AbrirDialogoAsync(franja);
+
+    private async Task AbrirDialogoAsync(DisponibilidadGuiaSalida? franja)
+    {
+        var parametros = new DialogParameters<GuiaDisponibilidadDialogo>
+        {
+            { x => x.IdGuia, Sesion.IdGuia },
+            { x => x.Franja, franja }
+        };
+        var opciones = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+
+        var dialogo = await Dialogos.ShowAsync<GuiaDisponibilidadDialogo>(null, parametros, opciones);
+        var resultado = await dialogo.Result;
+        if (resultado is null || resultado.Canceled) return;
+
+        Snackbar.Add(franja is null ? "Franja creada." : "Franja actualizada.", Severity.Success);
+        await CargarAsync();
+    }
+
+    private async Task EliminarAsync(DisponibilidadGuiaSalida franja)
+    {
+        var confirmar = await Dialogos.ShowMessageBoxAsync(
+            "Eliminar franja",
+            $"¿Seguro que querés eliminar la franja del {franja.Fecha:dd/MM/yyyy} de {franja.HoraInicio:HH:mm} a {franja.HoraFin:HH:mm}? Esta acción no se puede deshacer.",
+            yesText: "Eliminar", cancelText: "Cancelar");
+        if (confirmar != true) return;
+
+        try
+        {
+            await DisponibilidadService.EliminarAsync(franja.IdDisponibilidad);
+            _franjas.Remove(franja);
+            Snackbar.Add("Franja eliminada.", Severity.Success);
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("No se pudo conectar con el servidor.", Severity.Error);
+        }
+    }
+}

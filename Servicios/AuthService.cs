@@ -1,5 +1,6 @@
 ﻿using ExploreWayApp.Auth;
 using ExploreWayApp.DTOs.Auth;
+using ExploreWayApp.DTOs.guia;
 using ExploreWayApp.Excepciones;
 using System.Net;
 using System.Net.Http.Json;
@@ -33,6 +34,23 @@ public sealed class AuthService(
                       ?? throw new ApiException(500, "No se pudieron obtener los datos del usuario autenticado.");
 
         sesion.CompletarPerfil(usuario);
+
+        // El token no trae el Id del guía: se resuelve una vez a partir de su persona.
+        if (sesion.EsGuia)
+        {
+            try
+            {
+                var guia = await cliente.LeerAsync<GuiaSalida>($"guias/persona/{usuario.IdPersona}")
+                           ?? throw new ApiException(500, "No se encontró el perfil de guía de este usuario.");
+                sesion.AsignarGuia(guia.IdGuia);
+            }
+            catch
+            {
+                sesion.Cerrar();
+                throw;
+            }
+        }
+
         proveedor.Notificar();
     }
 

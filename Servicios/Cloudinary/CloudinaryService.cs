@@ -10,7 +10,13 @@ public sealed class CloudinaryService(IOptions<CloudinaryOptions> opciones) : IC
 {
     private readonly CloudinaryOptions _opciones = opciones.Value;
 
-    public async Task<string> SubirImagenDestinoAsync(Stream contenido, string nombreArchivo, int idDestino)
+    public Task<string> SubirImagenDestinoAsync(Stream contenido, string nombreArchivo, int idDestino) =>
+        SubirAsync(contenido, nombreArchivo, $"exploreway/destinos/{idDestino}");
+
+    public Task<string> SubirFotoGuiaAsync(Stream contenido, string nombreArchivo) =>
+        SubirAsync(contenido, nombreArchivo, "exploreway/guias");
+
+    private async Task<string> SubirAsync(Stream contenido, string nombreArchivo, string carpeta)
     {
         if (!_opciones.EstaConfigurado)
             throw new InvalidOperationException("Cloudinary no está configurado. Revisá las credenciales del servidor.");
@@ -23,7 +29,7 @@ public sealed class CloudinaryService(IOptions<CloudinaryOptions> opciones) : IC
         var parametros = new ImageUploadParams
         {
             File = new FileDescription(nombreArchivo, contenido),
-            Folder = $"exploreway/destinos/{idDestino}",
+            Folder = carpeta,
             UseFilename = false,
             UniqueFilename = true,
             Overwrite = false

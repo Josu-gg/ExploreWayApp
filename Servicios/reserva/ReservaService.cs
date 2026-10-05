@@ -10,6 +10,9 @@ public sealed class ReservaService(HttpClient http) : IReservaService
     public Task<List<ReservaSalida>> ListarAsync() =>
         http.LeerTodasLasPaginasAsync<ReservaSalida>(Url);
 
+    public Task<List<ReservaSalida>> ListarPorGuiaAsync(int idGuia) =>
+        http.LeerTodasLasPaginasAsync<ReservaSalida>($"{Url}/guia/{idGuia}");
+
     public Task<ReservaSalida?> CrearAsync(ReservaGuardar dto) =>
         http.EnviarAsync<ReservaSalida>(HttpMethod.Post, Url, dto);
 

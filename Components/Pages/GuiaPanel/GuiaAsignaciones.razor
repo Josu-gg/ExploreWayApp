@@ -1,0 +1,155 @@
+@page "/guia/asignaciones"
+@layout GuiaLayout
+
+@using ExploreWayApp.Auth
+@using ExploreWayApp.DTOs.GuiaActividad
+@using ExploreWayApp.DTOs.GuiaDestino
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.GuiaActividad
+@using ExploreWayApp.Servicios.GuiaDestino
+
+@inject IGuiaDestinoService GuiaDestinoService
+@inject IGuiaActividadService GuiaActividadService
+@inject SesionUsuario Sesion
+
+<PageTitle>Mis asignaciones — ExploreWay</PageTitle>
+
+<div class="ew-admin-page">
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+
+        <header class="ew-admin-head">
+            <div>
+                <span class="ew-admin-kicker">Asignaciones</span>
+                <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Mis asignaciones</MudText>
+                <MudText Typo="Typo.body1" Class="exploreway-section-lead">
+                    Los destinos y actividades que el administrador te asignó. Los clientes solo pueden reservarte en estos.
+                </MudText>
+            </div>
+        </header>
+
+        @if (error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;"
+                      ContentAlignment="HorizontalAlignment.Start">
+                <div class="d-flex align-center justify-space-between flex-wrap gap-3">
+                    <span>@error</span>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error"
+                               Class="text-none" OnClick="CargarAsync">
+                        Reintentar
+                    </MudButton>
+                </div>
+            </MudAlert>
+        }
+
+        <MudGrid Spacing="3">
+            <MudItem xs="12" md="6">
+                <div class="ew-panel">
+                    <div class="ew-panel-head">
+                        <MudText Typo="Typo.h6" Class="font-weight-bold">Destinos</MudText>
+                    </div>
+
+                    @if (cargando)
+                    {
+                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                    }
+                    else if (_destinos.Count == 0)
+                    {
+                        <div class="ew-panel-vacio">
+                            <MudIcon Icon="@Icons.Material.Outlined.Place" Size="Size.Large" Style="color: var(--ew-teal);" />
+                            <MudText Typo="Typo.body2" Style="color: #64748b;">Todavía no tenés destinos asignados.</MudText>
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="ew-lista">
+                            @foreach (var d in _destinos)
+                            {
+                                <li>
+                                    <MudIcon Icon="@Icons.Material.Outlined.Place" Size="Size.Small" Style="color: var(--ew-primary);" />
+                                    <div class="ew-lista-texto">
+                                        <strong>@d.NombreDestino</strong>
+                                        <span>@(string.IsNullOrWhiteSpace(d.Municipio) ? d.Departamento : $"{d.Municipio}, {d.Departamento}")</span>
+                                    </div>
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Success" Class="ma-0">
+                                        @d.NombreEstado
+                                    </MudChip>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <div class="ew-panel">
+                    <div class="ew-panel-head">
+                        <MudText Typo="Typo.h6" Class="font-weight-bold">Actividades</MudText>
+                    </div>
+
+                    @if (cargando)
+                    {
+                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                    }
+                    else if (_actividades.Count == 0)
+                    {
+                        <div class="ew-panel-vacio">
+                            <MudIcon Icon="@Icons.Material.Outlined.Hiking" Size="Size.Large" Style="color: var(--ew-teal);" />
+                            <MudText Typo="Typo.body2" Style="color: #64748b;">Todavía no tenés actividades asignadas.</MudText>
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="ew-lista">
+                            @foreach (var a in _actividades)
+                            {
+                                <li>
+                                    <MudIcon Icon="@Icons.Material.Outlined.Hiking" Size="Size.Small" Style="color: var(--ew-primary);" />
+                                    <div class="ew-lista-texto">
+                                        <strong>@a.NombreActividad</strong>
+                                        <span>@(string.IsNullOrWhiteSpace(a.Dificultad) ? "Sin dificultad indicada" : $"Dificultad: {a.Dificultad}")</span>
+                                    </div>
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Success" Class="ma-0">
+                                        @a.NombreEstado
+                                    </MudChip>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </MudItem>
+        </MudGrid>
+    </MudContainer>
+</div>
+
+@code {
+    private List<GuiaDestinoSalida> _destinos = [];
+    private List<GuiaActividadSalida> _actividades = [];
+    private bool cargando;
+    private string? error;
+
+    protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+
+        try
+        {
+            _destinos = await GuiaDestinoService.ListarPorGuiaAsync(Sesion.IdGuia);
+            _actividades = await GuiaActividadService.ListarPorGuiaAsync(Sesion.IdGuia);
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+}

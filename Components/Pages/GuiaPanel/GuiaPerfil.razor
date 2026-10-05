@@ -1,0 +1,140 @@
+@page "/guia/perfil"
+@layout GuiaLayout
+
+@using System.Globalization
+@using ExploreWayApp.Auth
+@using ExploreWayApp.DTOs.guia
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Guia
+
+@inject IGuiaService GuiaService
+@inject SesionUsuario Sesion
+@inject IDialogService Dialogos
+@inject ISnackbar Snackbar
+
+<PageTitle>Mi perfil — ExploreWay</PageTitle>
+
+<div class="ew-admin-page">
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="px-4 px-md-8">
+        <header class="ew-admin-head">
+            <div>
+                <span class="ew-admin-kicker">Cuenta</span>
+                <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Mi perfil</MudText>
+            </div>
+            <MudButton Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.Edit"
+                       Class="rounded-pill px-6 py-2 text-none exploreway-btn-auth"
+                       Disabled="_guia is null"
+                       OnClick="EditarAsync">
+                Editar perfil
+            </MudButton>
+        </header>
+
+        @if (error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;"
+                      ContentAlignment="HorizontalAlignment.Start">
+                <div class="d-flex align-center justify-space-between flex-wrap gap-3">
+                    <span>@error</span>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error"
+                               Class="text-none" OnClick="CargarAsync">
+                        Reintentar
+                    </MudButton>
+                </div>
+            </MudAlert>
+        }
+
+        <div class="ew-panel">
+            <div class="d-flex align-center gap-4 pa-6">
+                <MudAvatar Color="Color.Primary" Style="width: 72px; height: 72px; font-size: 1.6rem;" Image="@(_guia?.Foto ?? Sesion.Foto)">@Iniciales</MudAvatar>
+                <div>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">@Sesion.NombreCompleto</MudText>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Primary" Class="ma-0 mt-1">
+                        @Sesion.NombreRol
+                    </MudChip>
+                </div>
+            </div>
+            <MudDivider />
+
+            @if (cargando)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            }
+            else
+            {
+                <dl class="ew-datos">
+                    <dt>Correo electrónico</dt>
+                    <dd>@Sesion.Correo</dd>
+
+                    @if (_guia is not null)
+                    {
+                        <dt>Calificación promedio</dt>
+                        <dd>@((_guia.CalificacionPromedio ?? 0).ToString("0.00", CultureInfo.InvariantCulture)) / 5</dd>
+                        <dt>Disponibilidad</dt>
+                        <dd>@(_guia.EstadoDisponibilidad ? "Disponible para nuevos recorridos" : "No disponible")</dd>
+                        <dt>Primeros auxilios</dt>
+                        <dd>@(_guia.PrimerosAuxilios ? "Sí" : "No")</dd>
+                        <dt>Biografía</dt>
+                        <dd>@Texto(_guia.Biografia)</dd>
+                        <dt>Experiencia</dt>
+                        <dd>@Texto(_guia.Experiencia)</dd>
+                        <dt>Estudios</dt>
+                        <dd>@Texto(_guia.Estudios)</dd>
+                    }
+                </dl>
+            }
+        </div>
+    </MudContainer>
+</div>
+
+@code {
+    private GuiaSalida? _guia;
+    private bool cargando;
+    private string? error;
+
+    private string Iniciales =>
+        string.Concat(Sesion.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2).Select(p => char.ToUpper(p[0])));
+
+    private static string Texto(string? valor) => string.IsNullOrWhiteSpace(valor) ? "Sin completar" : valor;
+
+    protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+
+        try
+        {
+            _guia = await GuiaService.BuscarPorIdAsync(Sesion.IdGuia);
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task EditarAsync()
+    {
+        if (_guia is null) return;
+
+        var parametros = new DialogParameters<GuiaPerfilDialogo> { { x => x.Guia, _guia } };
+        var opciones = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+
+        var dialogo = await Dialogos.ShowAsync<GuiaPerfilDialogo>(null, parametros, opciones);
+        var resultado = await dialogo.Result;
+        if (resultado is null || resultado.Canceled) return;
+
+        Snackbar.Add("Perfil actualizado.", Severity.Success);
+        await CargarAsync();
+    }
+}

@@ -7,6 +7,8 @@
         public int IdCliente { get; set; }
         public string NombreCliente { get; set; } = string.Empty;
         public string ApellidoCliente { get; set; } = string.Empty;
+        public string? TelefonoCliente { get; set; }
+        public string? CorreoCliente { get; set; }
 
         public int IdGuia { get; set; }
         public string NombreGuia { get; set; } = string.Empty;

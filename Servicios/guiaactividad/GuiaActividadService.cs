@@ -9,6 +9,9 @@ public sealed class GuiaActividadService(HttpClient http) : IGuiaActividadServic
     public Task<List<GuiaActividadSalida>> ListarAsync() =>
         http.LeerTodasLasPaginasAsync<GuiaActividadSalida>(Url);
 
+    public async Task<List<GuiaActividadSalida>> ListarPorGuiaAsync(int idGuia) =>
+        await http.LeerAsync<List<GuiaActividadSalida>>($"{Url}/guia/{idGuia}") ?? [];
+
     public Task<GuiaActividadSalida?> CrearAsync(GuiaActividadGuardar dto) =>
         http.EnviarAsync<GuiaActividadSalida>(HttpMethod.Post, Url, dto);
 

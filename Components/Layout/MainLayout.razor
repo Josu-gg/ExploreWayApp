@@ -45,7 +45,7 @@
                     <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true">
                         <ActivatorContent Context="_act">
                             <div class="d-flex align-center gap-2" style="cursor: pointer;">
-                                <MudAvatar Color="Color.Primary" Size="Size.Medium">@Iniciales</MudAvatar>
+                                <MudAvatar Color="Color.Primary" Size="Size.Medium" Image="@Sesion.Foto">@Iniciales</MudAvatar>
                                 <div class="d-flex flex-column" style="line-height: 1.2;">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold">@Sesion.NombreCompleto</MudText>
                                     <MudText Typo="Typo.caption">@Sesion.NombreRol</MudText>
@@ -59,6 +59,10 @@
                             @if (Sesion.EsAdmin)
                             {
                                 <MudMenuItem Icon="@Icons.Material.Filled.Dashboard" Href="/admin">Panel de administración</MudMenuItem>
+                            }
+                            @if (Sesion.EsGuia)
+                            {
+                                <MudMenuItem Icon="@Icons.Material.Filled.Badge" Href="/guia">Panel de guía</MudMenuItem>
                             }
                             <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="CerrarSesion">Cerrar sesión</MudMenuItem>
                         </ChildContent>
@@ -132,7 +136,7 @@
             <Authorized>
                 <div class="d-flex flex-column gap-3 mt-auto pb-4">
                     <div class="d-flex align-center gap-3 px-2">
-                        <MudAvatar Color="Color.Primary">@Iniciales</MudAvatar>
+                        <MudAvatar Color="Color.Primary" Image="@Sesion.Foto">@Iniciales</MudAvatar>
                         <div class="d-flex flex-column" style="line-height: 1.2;">
                             <MudText Typo="Typo.body2" Class="font-weight-bold">@Sesion.NombreCompleto</MudText>
                             <MudText Typo="Typo.caption">@Sesion.Correo</MudText>
@@ -148,6 +152,18 @@
                                Class="rounded-pill py-2 text-none"
                                OnClick="@CloseDrawer">
                         Panel de administración
+                    </MudButton>
+                    }
+                    @if (Sesion.EsGuia)
+                    {
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Primary"
+                               FullWidth="true"
+                               StartIcon="@Icons.Material.Filled.Badge"
+                               Href="/guia"
+                               Class="rounded-pill py-2 text-none"
+                               OnClick="@CloseDrawer">
+                        Panel de guía
                     </MudButton>
                     }
                     <MudButton Variant="Variant.Outlined"

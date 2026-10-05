@@ -5,6 +5,7 @@ namespace ExploreWayApp.Servicios.GuiaActividad;
 public interface IGuiaActividadService
 {
     Task<List<GuiaActividadSalida>> ListarAsync();
+    Task<List<GuiaActividadSalida>> ListarPorGuiaAsync(int idGuia);
     Task<GuiaActividadSalida?> CrearAsync(GuiaActividadGuardar dto);
     Task<GuiaActividadSalida?> ModificarAsync(int id, GuiaActividadModificar dto);
     Task EliminarAsync(int id);

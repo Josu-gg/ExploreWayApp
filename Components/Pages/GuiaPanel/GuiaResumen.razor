@@ -1,0 +1,195 @@
+@page "/guia"
+@layout GuiaLayout
+
+@using System.Globalization
+@using ExploreWayApp.Auth
+@using ExploreWayApp.DTOs.guia
+@using ExploreWayApp.DTOs.reserva
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Guia
+@using ExploreWayApp.Servicios.Reserva
+
+@inject IReservaService ReservaService
+@inject IGuiaService GuiaService
+@inject SesionUsuario Sesion
+
+<PageTitle>Panel de guía — ExploreWay</PageTitle>
+
+<div class="ew-admin-page">
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+
+        <header class="ew-admin-head">
+            <div>
+                <span class="ew-admin-kicker">Resumen</span>
+                <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">
+                    Hola, @PrimerNombre
+                </MudText>
+                <MudText Typo="Typo.body1" Class="exploreway-section-lead">
+                    Así está tu agenda en ExploreWay.
+                </MudText>
+            </div>
+        </header>
+
+        @if (_error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;">@_error</MudAlert>
+        }
+
+        @* INDICADORES *@
+        <MudGrid Spacing="3" Class="mb-6">
+            <MudItem xs="12" sm="6" md="3">
+                <div class="ew-stat">
+                    <span class="ew-stat-icon" style="background: rgba(245,158,11,.14); color: #b45309;">
+                        <MudIcon Icon="@Icons.Material.Filled.HourglassTop" />
+                    </span>
+                    <span class="ew-stat-label">Por confirmar</span>
+                    <span class="ew-stat-value">@(_cargando ? "…" : Contar("Pendiente").ToString())</span>
+                </div>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <div class="ew-stat">
+                    <span class="ew-stat-icon" style="background: rgba(91,186,227,.16); color: #2b8db8;">
+                        <MudIcon Icon="@Icons.Material.Filled.EventAvailable" />
+                    </span>
+                    <span class="ew-stat-label">Confirmadas</span>
+                    <span class="ew-stat-value">@(_cargando ? "…" : Contar("Aceptada").ToString())</span>
+                </div>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <div class="ew-stat">
+                    <span class="ew-stat-icon" style="background: rgba(0,168,107,.12); color: var(--ew-primary);">
+                        <MudIcon Icon="@Icons.Material.Filled.Star" />
+                    </span>
+                    <span class="ew-stat-label">Calificación</span>
+                    <span class="ew-stat-value">@(_cargando ? "…" : (_guia?.CalificacionPromedio ?? 0).ToString("0.00", CultureInfo.InvariantCulture))</span>
+                </div>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <div class="ew-stat">
+                    <span class="ew-stat-icon" style="background: rgba(103,190,203,.2); color: #3a8f9c;">
+                        <MudIcon Icon="@Icons.Material.Filled.Badge" />
+                    </span>
+                    <span class="ew-stat-label">Disponibilidad</span>
+                    <span class="ew-stat-value ew-stat-value--text">@(_cargando ? "…" : _guia?.EstadoDisponibilidad == true ? "Disponible" : "No disponible")</span>
+                </div>
+            </MudItem>
+        </MudGrid>
+
+        <MudGrid Spacing="3">
+            @* PRÓXIMOS RECORRIDOS *@
+            <MudItem xs="12" md="8">
+                <div class="ew-panel">
+                    <div class="ew-panel-head">
+                        <MudText Typo="Typo.h6" Class="font-weight-bold">Próximos recorridos</MudText>
+                        <MudButton Href="/guia/agenda" Size="Size.Small" Color="Color.Primary" Class="text-none"
+                                   EndIcon="@Icons.Material.Filled.ArrowForward">
+                            Ver agenda
+                        </MudButton>
+                    </div>
+
+                    @if (_cargando)
+                    {
+                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                    }
+                    else if (Proximas.Count == 0)
+                    {
+                        <div class="ew-panel-vacio">
+                            <MudIcon Icon="@Icons.Material.Outlined.EventNote" Size="Size.Large" Style="color: var(--ew-teal);" />
+                            <MudText Typo="Typo.body2" Style="color: #64748b;">No tenés recorridos próximos.</MudText>
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="ew-lista">
+                            @foreach (var r in Proximas)
+                            {
+                                <li>
+                                    <MudIcon Icon="@Icons.Material.Outlined.Place" Size="Size.Small" Style="color: var(--ew-primary);" />
+                                    <div class="ew-lista-texto">
+                                        <strong>@r.NombreDestino · @r.NombreActividad</strong>
+                                        <span>@r.FechaRecorrido.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) · @r.HoraInicio.ToString("HH:mm", CultureInfo.InvariantCulture)–@r.HoraFin.ToString("HH:mm", CultureInfo.InvariantCulture) · @($"{r.NombreCliente} {r.ApellidoCliente}".Trim())</span>
+                                    </div>
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                             Color="@(r.NombreEstado == "Pendiente" ? Color.Warning : Color.Info)" Class="ma-0">
+                                        @r.NombreEstado
+                                    </MudChip>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </MudItem>
+
+            @* ACCESOS RÁPIDOS *@
+            <MudItem xs="12" md="4">
+                <div class="ew-panel">
+                    <div class="ew-panel-head">
+                        <MudText Typo="Typo.h6" Class="font-weight-bold">Accesos rápidos</MudText>
+                    </div>
+                    <div class="ew-accesos">
+                        <a href="/guia/agenda" class="ew-acceso">
+                            <MudIcon Icon="@Icons.Material.Filled.EventAvailable" />
+                            <span>Mi agenda</span>
+                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+                        </a>
+                        <a href="/guia/disponibilidad" class="ew-acceso">
+                            <MudIcon Icon="@Icons.Material.Filled.EventRepeat" />
+                            <span>Mi disponibilidad</span>
+                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+                        </a>
+                        <a href="/guia/resenas" class="ew-acceso">
+                            <MudIcon Icon="@Icons.Material.Filled.Star" />
+                            <span>Mis reseñas</span>
+                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+                        </a>
+                        <a href="/guia/perfil" class="ew-acceso">
+                            <MudIcon Icon="@Icons.Material.Filled.Person" />
+                            <span>Mi perfil</span>
+                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+                        </a>
+                    </div>
+                </div>
+            </MudItem>
+        </MudGrid>
+    </MudContainer>
+</div>
+
+@code {
+    private List<ReservaSalida> _reservas = [];
+    private GuiaSalida? _guia;
+    private bool _cargando = true;
+    private string? _error;
+
+    private string PrimerNombre =>
+        Sesion.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "guía";
+
+    private List<ReservaSalida> Proximas => _reservas
+        .Where(r => r.FechaRecorrido >= DateOnly.FromDateTime(DateTime.Today)
+                    && (r.NombreEstado == "Pendiente" || r.NombreEstado == "Aceptada"))
+        .OrderBy(r => r.FechaRecorrido).ThenBy(r => r.HoraInicio)
+        .Take(6)
+        .ToList();
+
+    private int Contar(string estado) => _reservas.Count(r => r.NombreEstado == estado);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _reservas = await ReservaService.ListarPorGuiaAsync(Sesion.IdGuia);
+            _guia = await GuiaService.BuscarPorIdAsync(Sesion.IdGuia);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+}

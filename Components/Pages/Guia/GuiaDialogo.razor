@@ -1,8 +1,12 @@
+@using ExploreWayApp.Components.Compartidos
+@using ExploreWayApp.Config
 @using ExploreWayApp.DTOs.guia
 @using ExploreWayApp.Excepciones
 @using ExploreWayApp.Servicios.Guia
+@using ExploreWayApp.Servicios.Imagenes
 
 @inject IGuiaService GuiaService
+@inject ICloudinaryService CloudinaryService
 
 <MudDialog Class="exploreway-guia-dialogo">
     <TitleContent>
@@ -97,8 +101,8 @@
                                       @bind-Value="registro.Direccion" For="@(() => registro.Direccion)" />
                     </MudItem>
                     <MudItem xs="12">
-                        <MudTextField Label="URL de la foto (opcional)" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="500"
-                                      @bind-Value="registro.Foto" For="@(() => registro.Foto)" />
+                        <MudText Typo="Typo.body2" Class="mb-2" Style="color: #64748b;">Foto de perfil (opcional)</MudText>
+                        <SelectorFoto @bind-Archivo="_foto" Deshabilitado="guardando" />
                     </MudItem>
 
                     <MudItem xs="12" Class="mt-2">
@@ -176,6 +180,7 @@
     private readonly GuiaModificar edicion = new();
     private readonly GuiaRegistroGuardar registro = new() { PrimerosAuxilios = false, EstadoDisponibilidad = true };
     private DateTime? _fechaNacimiento;
+    private IBrowserFile? _foto;
     private MudForm _formulario = default!;
     private string? error;
     private bool guardando;
@@ -217,7 +222,12 @@
                 registro.Telefono = registro.Telefono.Trim();
                 registro.Correo = registro.Correo.Trim();
                 registro.Direccion = Limpiar(registro.Direccion);
-                registro.Foto = Limpiar(registro.Foto);
+                registro.Foto = null;
+                if (_foto is not null)
+                {
+                    await using var flujo = _foto.OpenReadStream(LimitesImagen.TamanoMaximoBytes);
+                    registro.Foto = await CloudinaryService.SubirFotoGuiaAsync(flujo, _foto.Name);
+                }
                 registro.Biografia = Limpiar(registro.Biografia);
                 registro.Experiencia = Limpiar(registro.Experiencia);
                 registro.Estudios = Limpiar(registro.Estudios);
@@ -240,7 +250,11 @@
         {
             error = ex.Message;
         }
-        catch (HttpRequestException)
+        catch (InvalidOperationException ex)
+        {
+            error = ex.Message;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException)
         {
             error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
         }

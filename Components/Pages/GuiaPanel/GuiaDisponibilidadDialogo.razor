@@ -1,0 +1,174 @@
+@using ExploreWayApp.DTOs.DisponibilidadGuia
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.DisponibilidadGuia
+
+@inject IDisponibilidadGuiaService DisponibilidadService
+
+<MudDialog Class="exploreway-destino-dialogo">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.EventRepeat" Style="color: var(--ew-primary);" />
+            <MudText Typo="Typo.h6" Class="font-weight-bold">
+                @(EsEdicion ? "Editar franja" : "Nueva franja de disponibilidad")
+            </MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        @if (error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4" Style="border-radius: 12px;">
+                @error
+            </MudAlert>
+        }
+
+        <MudForm @ref="_formulario">
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudDatePicker Label="Fecha"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Editable="true"
+                                   DateFormat="dd/MM/yyyy"
+                                   MinDate="DateTime.Today"
+                                   Required="true"
+                                   RequiredError="La fecha es obligatoria."
+                                   @bind-Date="_fecha" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTimePicker Label="Hora de inicio"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Editable="true"
+                                   Required="true"
+                                   RequiredError="La hora de inicio es obligatoria."
+                                   @bind-Time="_inicio" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTimePicker Label="Hora de fin"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Editable="true"
+                                   Required="true"
+                                   RequiredError="La hora de fin es obligatoria."
+                                   @bind-Time="_fin" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Class="text-none" Disabled="guardando" OnClick="Cancelar">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Class="rounded-pill px-6 text-none exploreway-btn-auth"
+                   Disabled="guardando"
+                   OnClick="GuardarAsync">
+            @if (guardando)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="color: #ffffff;" />
+            }
+            @(guardando ? "Guardando…" : "Guardar")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    // Guía dueño de la franja; la API vuelve a verificarlo con el token.
+    [Parameter] public int IdGuia { get; set; }
+
+    // Franja a editar; null significa que se está creando una nueva.
+    [Parameter] public DisponibilidadGuiaSalida? Franja { get; set; }
+
+    private MudForm _formulario = default!;
+    private DateTime? _fecha;
+    private TimeSpan? _inicio;
+    private TimeSpan? _fin;
+    private string? error;
+    private bool guardando;
+
+    private bool EsEdicion => Franja is not null;
+
+    protected override void OnInitialized()
+    {
+        if (Franja is null) return;
+
+        _fecha = Franja.Fecha.ToDateTime(TimeOnly.MinValue);
+        _inicio = Franja.HoraInicio.ToTimeSpan();
+        _fin = Franja.HoraFin.ToTimeSpan();
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task GuardarAsync()
+    {
+        if (guardando) return;
+
+        await _formulario.ValidateAsync();
+        if (!_formulario.IsValid) return;
+
+        if (_fecha is null || _inicio is null || _fin is null)
+        {
+            error = "Indicá la fecha y el horario de la franja.";
+            return;
+        }
+
+        if (_fecha.Value.Date < DateTime.Today)
+        {
+            error = "La fecha no puede ser anterior a hoy.";
+            return;
+        }
+
+        if (_inicio.Value >= _fin.Value)
+        {
+            error = "La hora de inicio debe ser anterior a la hora de fin.";
+            return;
+        }
+
+        guardando = true;
+        error = null;
+
+        try
+        {
+            var fecha = DateOnly.FromDateTime(_fecha.Value);
+            var inicio = TimeOnly.FromTimeSpan(_inicio.Value);
+            var fin = TimeOnly.FromTimeSpan(_fin.Value);
+
+            if (Franja is null)
+            {
+                await DisponibilidadService.CrearAsync(new DisponibilidadGuiaGuardar
+                {
+                    IdGuia = IdGuia,
+                    Fecha = fecha,
+                    HoraInicio = inicio,
+                    HoraFin = fin
+                });
+            }
+            else
+            {
+                await DisponibilidadService.ModificarAsync(Franja.IdDisponibilidad, new DisponibilidadGuiaModificar
+                {
+                    Fecha = fecha,
+                    HoraInicio = inicio,
+                    HoraFin = fin,
+                    IdEstado = Franja.IdEstado
+                });
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+}

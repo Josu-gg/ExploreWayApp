@@ -1,0 +1,98 @@
+@using ExploreWayApp.Config
+
+@* Selector de una sola imagen (foto de perfil). El archivo se sube a Cloudinary al guardar el formulario. *@
+<div class="d-flex align-center gap-3 flex-wrap">
+    <MudAvatar Color="Color.Primary" Style="width: 64px; height: 64px;" Image="@UrlVista">
+        <MudIcon Icon="@Icons.Material.Filled.Person" />
+    </MudAvatar>
+
+    <div class="d-flex flex-column gap-1">
+        <MudFileUpload T="IReadOnlyList<IBrowserFile>"
+                       Accept="image/png, image/jpeg, image/webp"
+                       MaximumFileCount="1"
+                       Disabled="Deshabilitado"
+                       FilesChanged="AlSeleccionar">
+            <ActivatorContent>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.CloudUpload"
+                           Class="text-none"
+                           Disabled="Deshabilitado">
+                    @(Archivo is null ? "Elegir foto" : "Cambiar foto")
+                </MudButton>
+            </ActivatorContent>
+        </MudFileUpload>
+
+        @if (Archivo is not null)
+        {
+            <div class="d-flex align-center gap-1">
+                <MudText Typo="Typo.caption">@Archivo.Name (@Tamano(Archivo.Size))</MudText>
+                <MudButton Size="Size.Small" Class="text-none" Disabled="Deshabilitado" OnClick="QuitarSeleccion">
+                    Descartar
+                </MudButton>
+            </div>
+        }
+        else if (PermitirQuitar && !string.IsNullOrWhiteSpace(UrlActual))
+        {
+            <MudSwitch T="bool" Color="Color.Primary" Value="Quitar" ValueChanged="AlCambiarQuitar"
+                       Label="Quitar la foto actual" Disabled="Deshabilitado" />
+        }
+
+        @if (_aviso is not null)
+        {
+            <MudText Typo="Typo.caption" Color="Color.Error">@_aviso</MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.caption" Style="color: #64748b;">
+                JPG, PNG o WEBP, máximo @(LimitesImagen.TamanoMaximoBytes / 1024 / 1024) MB.
+            </MudText>
+        }
+    </div>
+</div>
+
+@code {
+    // Foto que ya tiene la persona (para mostrarla y poder quitarla).
+    [Parameter] public string? UrlActual { get; set; }
+
+    [Parameter] public IBrowserFile? Archivo { get; set; }
+    [Parameter] public EventCallback<IBrowserFile?> ArchivoChanged { get; set; }
+
+    [Parameter] public bool Quitar { get; set; }
+    [Parameter] public EventCallback<bool> QuitarChanged { get; set; }
+
+    [Parameter] public bool PermitirQuitar { get; set; }
+    [Parameter] public bool Deshabilitado { get; set; }
+
+    private string? _aviso;
+
+    private string? UrlVista => Quitar || Archivo is not null || string.IsNullOrWhiteSpace(UrlActual) ? null : UrlActual;
+
+    private static string Tamano(long bytes) =>
+        bytes >= 1024 * 1024 ? $"{bytes / 1024d / 1024d:0.0} MB" : $"{Math.Max(1, bytes / 1024)} KB";
+
+    private async Task AlSeleccionar(IReadOnlyList<IBrowserFile> archivos)
+    {
+        var elegido = archivos.FirstOrDefault();
+        _aviso = null;
+
+        if (elegido is null) return;
+
+        if (elegido.Size > LimitesImagen.TamanoMaximoBytes)
+        {
+            _aviso = $"La imagen supera los {LimitesImagen.TamanoMaximoBytes / 1024 / 1024} MB.";
+            return;
+        }
+
+        await ArchivoChanged.InvokeAsync(elegido);
+        if (Quitar) await QuitarChanged.InvokeAsync(false);
+    }
+
+    private async Task QuitarSeleccion()
+    {
+        _aviso = null;
+        await ArchivoChanged.InvokeAsync(null);
+    }
+
+    private Task AlCambiarQuitar(bool valor) => QuitarChanged.InvokeAsync(valor);
+}

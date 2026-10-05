@@ -14,5 +14,6 @@
         public decimal? CalificacionPromedio { get; set; }
         public int IdEstado { get; set; }
         public string NombreEstado { get; set; } = string.Empty;
+        public string? Foto { get; set; }
     }
 }

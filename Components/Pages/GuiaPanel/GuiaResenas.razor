@@ -1,0 +1,130 @@
+@page "/guia/resenas"
+@layout GuiaLayout
+
+@using System.Globalization
+@using ExploreWayApp.Auth
+@using ExploreWayApp.DTOs.Resena
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Resena
+
+@inject IResenaService ResenaService
+@inject SesionUsuario Sesion
+
+<PageTitle>Mis reseñas — ExploreWay</PageTitle>
+
+<div class="ew-admin-page">
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+
+        <header class="ew-admin-head">
+            <div>
+                <span class="ew-admin-kicker">Reputación · @_resenas.Count reseñas</span>
+                <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Mis reseñas</MudText>
+                <MudText Typo="Typo.body1" Class="exploreway-section-lead">
+                    Lo que opinan los clientes de los recorridos que completaste con ellos.
+                </MudText>
+            </div>
+        </header>
+
+        @if (error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;"
+                      ContentAlignment="HorizontalAlignment.Start">
+                <div class="d-flex align-center justify-space-between flex-wrap gap-3">
+                    <span>@error</span>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error"
+                               Class="text-none" OnClick="CargarAsync">
+                        Reintentar
+                    </MudButton>
+                </div>
+            </MudAlert>
+        }
+
+        <MudGrid Spacing="3" Class="mb-6">
+            <MudItem xs="12" sm="6" md="3">
+                <div class="ew-stat">
+                    <span class="ew-stat-icon" style="background: rgba(0,168,107,.12); color: var(--ew-primary);">
+                        <MudIcon Icon="@Icons.Material.Filled.Star" />
+                    </span>
+                    <span class="ew-stat-label">Calificación promedio</span>
+                    <span class="ew-stat-value">@(cargando ? "…" : Promedio.ToString("0.00", CultureInfo.InvariantCulture))</span>
+                </div>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <div class="ew-stat">
+                    <span class="ew-stat-icon" style="background: rgba(91,186,227,.16); color: #2b8db8;">
+                        <MudIcon Icon="@Icons.Material.Filled.RateReview" />
+                    </span>
+                    <span class="ew-stat-label">Reseñas recibidas</span>
+                    <span class="ew-stat-value">@(cargando ? "…" : _resenas.Count.ToString())</span>
+                </div>
+            </MudItem>
+        </MudGrid>
+
+        <div class="ew-panel">
+            <div class="ew-panel-head">
+                <MudText Typo="Typo.h6" Class="font-weight-bold">Comentarios recientes</MudText>
+            </div>
+
+            @if (cargando)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            }
+            else if (_resenas.Count == 0)
+            {
+                <div class="ew-panel-vacio">
+                    <MudIcon Icon="@Icons.Material.Outlined.RateReview" Size="Size.Large" Style="color: var(--ew-teal);" />
+                    <MudText Typo="Typo.body2" Style="color: #64748b;">Todavía no recibiste reseñas.</MudText>
+                </div>
+            }
+            else
+            {
+                <ul class="ew-lista">
+                    @foreach (var r in _resenas)
+                    {
+                        <li>
+                            <div class="ew-lista-texto">
+                                <strong>@($"{r.NombreCliente} {r.ApellidoCliente}".Trim())</strong>
+                                <span>@r.Fecha.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) · Reserva #@r.IdReserva</span>
+                                <span>@(string.IsNullOrWhiteSpace(r.Comentario) ? "Sin comentario." : r.Comentario)</span>
+                            </div>
+                            <MudRating SelectedValue="r.Calificacion" ReadOnly="true" Size="Size.Small" />
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </MudContainer>
+</div>
+
+@code {
+    private List<ResenaSalida> _resenas = [];
+    private bool cargando;
+    private string? error;
+
+    private double Promedio => _resenas.Count == 0 ? 0 : _resenas.Average(r => r.Calificacion);
+
+    protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+
+        try
+        {
+            _resenas = await ResenaService.ListarPorGuiaAsync(Sesion.IdGuia);
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+}

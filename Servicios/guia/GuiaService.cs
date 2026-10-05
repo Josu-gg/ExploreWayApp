@@ -13,6 +13,12 @@ public sealed class GuiaService(HttpClient http) : IGuiaService
     public Task<GuiaSalida?> BuscarPorIdAsync(int id) =>
         http.LeerAsync<GuiaSalida>($"{Url}/{id}");
 
+    public Task<GuiaSalida?> BuscarPorPersonaAsync(int idPersona) =>
+        http.LeerAsync<GuiaSalida>($"{Url}/persona/{idPersona}");
+
+    public Task<GuiaSalida?> ModificarMiPerfilAsync(GuiaPerfilModificar dto) =>
+        http.EnviarAsync<GuiaSalida>(HttpMethod.Put, $"{Url}/mi-perfil", dto);
+
     public Task<GuiaSalida?> RegistrarAsync(GuiaRegistroGuardar dto) =>
         http.EnviarAsync<GuiaSalida>(HttpMethod.Post, $"{Url}/registro", dto);
 
