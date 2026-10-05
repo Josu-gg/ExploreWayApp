@@ -2,6 +2,7 @@
 @using ExploreWayApp.Auth
 
 @inject SesionUsuario Sesion
+@inject NavigationManager Navegacion
 
 @* Restringe una vista al rol Cliente. Se muestra dentro del MainLayout. *@
 <AuthorizeView Roles="Cliente">
@@ -22,7 +23,7 @@
                 {
                     <MudText Typo="Typo.h5" Class="font-weight-bold mt-3">Iniciá sesión para continuar</MudText>
                     <MudText Typo="Typo.body2" Class="mb-5" Style="color: #64748b;">Necesitás una cuenta de cliente para ver esta sección.</MudText>
-                    <MudButton Variant="Variant.Filled" Href="/login" Class="rounded-pill px-6 text-none exploreway-btn-auth">Iniciar sesión</MudButton>
+                    <MudButton Variant="Variant.Filled" Href="@($"/login?returnUrl={Uri.EscapeDataString("/" + Navegacion.ToBaseRelativePath(Navegacion.Uri))}")" Class="rounded-pill px-6 text-none exploreway-btn-auth">Iniciar sesión</MudButton>
                 }
             </div>
         </div>

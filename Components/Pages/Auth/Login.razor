@@ -159,6 +159,14 @@
     private bool enviando;
     private bool _verContra;
 
+    // Si el cliente llegó desde "Reservar", vuelve a esa reserva. Solo se aceptan rutas internas.
+    [SupplyParameterFromQuery(Name = "returnUrl")] public string? ReturnUrl { get; set; }
+
+    private string DestinoCliente() =>
+        Sesion.EsCliente && !string.IsNullOrWhiteSpace(ReturnUrl) && ReturnUrl.StartsWith('/') && !ReturnUrl.StartsWith("//") && !ReturnUrl.Contains('\\')
+            ? ReturnUrl
+            : "/";
+
     private static readonly (string Codigo, string Texto)[] _beneficios =
     [
         ("WP-01", "Reservás expediciones y paquetes turísticos al instante"),
@@ -192,7 +200,7 @@
         {
             await AuthService.IniciarSesionAsync(credenciales);
             Snackbar.Add($"¡Bienvenido/a de nuevo, {Sesion.NombreCompleto}!", Severity.Success);
-            Navegacion.NavigateTo(Sesion.EsAdmin ? "/admin" : Sesion.EsGuia ? "/guia" : "/");
+            Navegacion.NavigateTo(Sesion.EsAdmin ? "/admin" : Sesion.EsGuia ? "/guia" : DestinoCliente());
         }
         catch (ApiException ex)
         {

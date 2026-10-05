@@ -5,6 +5,7 @@
 @inject ISnackbar Snackbar
 @inject SesionUsuario Sesion
 @inject IAuthService AuthService
+@inject NavigationManager Navegacion
 
 @* Proveedores globales de MudBlazor con la paleta ExploreWay *@
 <MudThemeProvider Theme="TemaExploreWay.Instancia" />
@@ -187,5 +188,6 @@
     {
         AuthService.CerrarSesion();
         Snackbar.Add("Sesión cerrada.", Severity.Info);
+        Navegacion.NavigateTo("/");
     }
 }

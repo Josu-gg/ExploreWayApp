@@ -6,6 +6,7 @@
 @inject ISnackbar Snackbar
 @inject SesionUsuario Sesion
 @inject IAuthService AuthService
+@inject NavigationManager Navegacion
 
 @* Proveedores globales de MudBlazor con la paleta ExploreWay *@
 <MudThemeProvider Theme="TemaExploreWay.Instancia" />
@@ -47,7 +48,6 @@
                         <MudMenuItem Disabled="true">@Sesion.Correo</MudMenuItem>
                         <MudDivider />
                         <MudMenuItem Icon="@Icons.Material.Filled.Person" Href="/guia/perfil">Mi perfil</MudMenuItem>
-                        <MudMenuItem Icon="@Icons.Material.Filled.Public" Href="/">Ver sitio público</MudMenuItem>
                         <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="CerrarSesion">Cerrar sesión</MudMenuItem>
                     </ChildContent>
                 </MudMenu>
@@ -100,10 +100,6 @@
                 Mi perfil
             </MudNavLink>
 
-            <span class="ew-admin-nav-group">Sitio</span>
-            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Public">
-                Ver sitio público
-            </MudNavLink>
         </MudNavMenu>
 
         <div class="ew-admin-drawer-foot">
@@ -171,5 +167,6 @@
     {
         AuthService.CerrarSesion();
         Snackbar.Add("Sesión cerrada.", Severity.Info);
+        Navegacion.NavigateTo("/");
     }
 }

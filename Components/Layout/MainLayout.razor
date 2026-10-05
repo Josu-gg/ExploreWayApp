@@ -45,7 +45,7 @@
                     <a href="/cliente/reservas" class="exploreway-navlink">Mis reservas</a>
                 </Authorized>
                 <NotAuthorized Context="_nocli">
-                    <a href="/destinos" class="exploreway-navlink">Destinos</a>
+                    <a href="/cliente/destinos" class="exploreway-navlink">Destinos</a>
                 </NotAuthorized>
             </AuthorizeView>
             <a href="/#nosotros" class="exploreway-navlink" data-section-link="nosotros">Nosotros</a>
@@ -179,7 +179,7 @@
                     </MudNavLink>
                 </Authorized>
                 <NotAuthorized Context="_nocli">
-                    <MudNavLink Href="/destinos" Icon="@Icons.Material.Filled.Landscape" OnClick="@CloseDrawer">
+                    <MudNavLink Href="/cliente/destinos" Icon="@Icons.Material.Filled.Landscape" OnClick="@CloseDrawer">
                         Destinos
                     </MudNavLink>
                 </NotAuthorized>
@@ -291,7 +291,7 @@
                     </MudText>
                     <ul class="exploreway-footer-links">
                         <li><a href="#inicio">Inicio</a></li>
-                        <li><a href="/destinos">Destinos</a></li>
+                        <li><a href="/cliente/destinos">Destinos</a></li>
                         <li><a href="#nosotros">Sobre Nosotros</a></li>
                     </ul>
                 </MudItem>
@@ -418,6 +418,7 @@
         _menuAbierto = false;
         AuthService.CerrarSesion();
         Snackbar.Add("Sesión cerrada.", Severity.Info);
+        NavManager.NavigateTo("/");
     }
 
     private void ToggleDrawer()
