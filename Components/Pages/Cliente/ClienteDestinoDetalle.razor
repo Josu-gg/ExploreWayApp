@@ -1,0 +1,236 @@
+@page "/cliente/destinos/{IdDestino:int}"
+
+@using System.Globalization
+@using ExploreWayApp.Components.Compartidos
+@using ExploreWayApp.DTOs.Destino
+@using ExploreWayApp.DTOs.DestinoActividad
+@using ExploreWayApp.DTOs.GuiaDestino
+@using ExploreWayApp.DTOs.ImagenDestino
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Destino
+@using ExploreWayApp.Servicios.DestinoActividad
+@using ExploreWayApp.Servicios.GuiaDestino
+@using ExploreWayApp.Servicios.ImagenDestino
+
+@inject IDestinoService DestinoService
+@inject IDestinoActividadService DestinoActividadService
+@inject IGuiaDestinoService GuiaDestinoService
+@inject IImagenDestinoService ImagenService
+
+<PageTitle>@(_destino?.Nombre ?? "Destino") — ExploreWay</PageTitle>
+
+<SoloCliente>
+    <div class="ew-cliente-page">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+            <MudButton Href="/cliente/destinos" StartIcon="@Icons.Material.Filled.ArrowBack" Class="text-none mb-4" Color="Color.Primary">
+                Volver a destinos
+            </MudButton>
+
+            @if (error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;" ContentAlignment="HorizontalAlignment.Start">
+                    <div class="d-flex align-center justify-space-between flex-wrap gap-3">
+                        <span>@error</span>
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error" Class="text-none" OnClick="CargarAsync">Reintentar</MudButton>
+                    </div>
+                </MudAlert>
+            }
+
+            @if (cargando)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            }
+            else if (_destino is not null)
+            {
+                <header class="ew-admin-head">
+                    <div>
+                        <span class="ew-admin-kicker">
+                            <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" Style="vertical-align: -3px;" />
+                            @Ubicacion
+                        </span>
+                        <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">@_destino.Nombre</MudText>
+                    </div>
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.EventAvailable"
+                               Class="rounded-pill px-6 py-2 text-none exploreway-btn-auth"
+                               Disabled="@(_ofertas.Count == 0)"
+                               Href="@($"/cliente/reservar/{_destino.IdDestino}")">
+                        Reservar
+                    </MudButton>
+                </header>
+
+                <div class="ew-detalle-grid">
+                    <div>
+                        <div class="ew-gal-main">
+                            @if (ImagenActual is not null)
+                            {
+                                <img src="@ImagenActual.UrlImagen" alt="@(ImagenActual.Descripcion ?? _destino.Nombre)" />
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Outlined.Landscape" Style="font-size: 4rem;" />
+                            }
+                        </div>
+                        @if (_imagenes.Count > 1)
+                        {
+                            <div class="ew-gal-thumbs">
+                                @foreach (var img in _imagenes)
+                                {
+                                    var idImg = img.IdImagen;
+                                    <button type="button" class="ew-gal-thumb @(idImg == ImagenActual?.IdImagen ? "activa" : "")"
+                                            aria-label="Ver imagen" @onclick="() => _idImagen = idImg">
+                                        <img src="@img.UrlImagen" alt="@(img.Descripcion ?? _destino.Nombre)" loading="lazy" />
+                                    </button>
+                                }
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(ImagenActual?.Descripcion))
+                        {
+                            <MudText Typo="Typo.caption" Class="mt-2 d-block" Style="color: #64748b;">@ImagenActual.Descripcion</MudText>
+                        }
+
+                        <MudText Typo="Typo.h6" Class="font-weight-bold mt-6 mb-2">Acerca de este destino</MudText>
+                        <MudText Typo="Typo.body1" Style="color: #475569; line-height: 1.7; white-space: pre-line;">
+                            @(string.IsNullOrWhiteSpace(_destino.Descripcion) ? "Este destino todavía no tiene una descripción." : _destino.Descripcion)
+                        </MudText>
+
+                        @if (_guias.Count > 0)
+                        {
+                            <MudText Typo="Typo.h6" Class="font-weight-bold mt-6 mb-2">Guías que lo atienden</MudText>
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach (var g in _guias)
+                                {
+                                    <MudChip T="string" Variant="Variant.Outlined" Color="Color.Primary" Icon="@Icons.Material.Filled.Badge">
+                                        @($"{g.NombreGuia} {g.ApellidoGuia}".Trim())
+                                    </MudChip>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div class="ew-panel">
+                        <div class="ew-panel-head">
+                            <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Actividades disponibles</MudText>
+                            <span class="ew-admin-kicker mb-0">@_ofertas.Count</span>
+                        </div>
+                        @if (_ofertas.Count == 0)
+                        {
+                            <div class="ew-panel-vacio">
+                                <MudIcon Icon="@Icons.Material.Outlined.EventBusy" Style="color: var(--ew-teal);" />
+                                <MudText Typo="Typo.body2" Style="color: #64748b;">Por ahora no hay actividades para reservar en este destino.</MudText>
+                            </div>
+                        }
+                        @foreach (var o in _ofertas)
+                        {
+                            <div class="ew-oferta">
+                                <div style="min-width: 0; flex: 1 1 180px;">
+                                    <div class="ew-oferta-nombre">@o.NombreActividad</div>
+                                    <div class="ew-oferta-info">
+                                        <span>@Duracion(o.DuracionMinutos)</span>
+                                        @if (!string.IsNullOrWhiteSpace(o.Dificultad)) { <span>Dificultad: @o.Dificultad</span> }
+                                        <span>por persona</span>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(o.DescripcionActividad))
+                                    {
+                                        <MudText Typo="Typo.caption" Style="color: #64748b;">@o.DescripcionActividad</MudText>
+                                    }
+                                </div>
+                                <div class="d-flex align-center gap-3">
+                                    <span class="ew-precio">@Precio(o.PrecioBase)</span>
+                                    <MudButton Variant="Variant.Filled" Size="Size.Small" Class="rounded-pill text-none exploreway-btn-auth"
+                                               Href="@($"/cliente/reservar/{_destino.IdDestino}?actividad={o.IdDestinoActividad}")">
+                                        Reservar
+                                    </MudButton>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else if (error is null)
+            {
+                <div class="ew-cliente-vacio">
+                    <MudIcon Icon="@Icons.Material.Outlined.SearchOff" Size="Size.Large" Style="color: var(--ew-teal);" />
+                    <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">Destino no disponible</MudText>
+                    <MudText Typo="Typo.body2" Style="color: #64748b;">No encontramos el destino que buscás.</MudText>
+                </div>
+            }
+        </MudContainer>
+    </div>
+</SoloCliente>
+
+@code {
+    [Parameter] public int IdDestino { get; set; }
+
+    private DestinoSalidaDto? _destino;
+    private List<DestinoActividadSalida> _ofertas = [];
+    private List<ImagenDestinoSalida> _imagenes = [];
+    private List<GuiaDestinoSalida> _guias = [];
+    private int? _idImagen;
+    private bool cargando = true;
+    private string? error;
+
+    private ImagenDestinoSalida? ImagenActual =>
+        _imagenes.FirstOrDefault(i => i.IdImagen == _idImagen)
+        ?? _imagenes.FirstOrDefault(i => i.EsPrincipal)
+        ?? _imagenes.FirstOrDefault();
+
+    private string Ubicacion =>
+        _destino is null ? string.Empty
+        : string.IsNullOrWhiteSpace(_destino.Municipio) ? _destino.Departamento : $"{_destino.Municipio}, {_destino.Departamento}";
+
+    private static bool Activo(string? estado) =>
+        string.Equals(estado?.Trim(), "Activo", StringComparison.OrdinalIgnoreCase);
+
+    private static string Precio(decimal valor) => valor.ToString("C2", CultureInfo.GetCultureInfo("en-US"));
+
+    private static string Duracion(int minutos) =>
+        minutos < 60 ? $"{minutos} min"
+        : minutos % 60 == 0 ? $"{minutos / 60} h"
+        : $"{minutos / 60} h {minutos % 60} min";
+
+    protected override async Task OnParametersSetAsync() => await CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+        _destino = null;
+        _idImagen = null;
+
+        try
+        {
+            var destino = await DestinoService.BuscarPorIdAsync(IdDestino);
+            if (destino is null || !Activo(destino.NombreEstado)) return;
+            _destino = destino;
+
+            _ofertas = (await DestinoActividadService.ListarAsync())
+                .Where(o => o.IdDestino == IdDestino && Activo(o.NombreEstado))
+                .OrderBy(o => o.NombreActividad)
+                .ToList();
+
+            _imagenes = (await ImagenService.ListarPorDestinoAsync(IdDestino))
+                .OrderByDescending(i => i.EsPrincipal)
+                .ToList();
+
+            _guias = (await GuiaDestinoService.ListarAsync())
+                .Where(g => g.IdDestino == IdDestino && Activo(g.NombreEstado))
+                .ToList();
+        }
+        catch (ApiException ex) when (ex.CodigoEstado == 404)
+        {
+            _destino = null;
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+}

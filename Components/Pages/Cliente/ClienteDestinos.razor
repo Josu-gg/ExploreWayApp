@@ -1,0 +1,189 @@
+@page "/cliente/destinos"
+
+@using System.Globalization
+@using ExploreWayApp.Components.Compartidos
+@using ExploreWayApp.DTOs.Destino
+@using ExploreWayApp.DTOs.DestinoActividad
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Destino
+@using ExploreWayApp.Servicios.DestinoActividad
+@using ExploreWayApp.Servicios.ImagenDestino
+
+@inject IDestinoService DestinoService
+@inject IDestinoActividadService DestinoActividadService
+@inject IImagenDestinoService ImagenService
+
+<PageTitle>Destinos — ExploreWay</PageTitle>
+
+<SoloCliente>
+    <div class="ew-cliente-page">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+            <header class="ew-admin-head">
+                <div>
+                    <span class="ew-admin-kicker">Catálogo · @Filtrados.Count() disponibles</span>
+                    <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Destinos</MudText>
+                    <MudText Typo="Typo.body1" Class="exploreway-section-lead">
+                        Explorá los lugares de ExploreWay y reservá tu próxima expedición.
+                    </MudText>
+                </div>
+                <MudTextField @bind-Value="_busqueda"
+                              Placeholder="Buscar por nombre o ubicación"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              AdornmentColor="Color.Primary"
+                              Immediate="true"
+                              Clearable="true"
+                              Style="max-width: 380px; background: #fff;" />
+            </header>
+
+            @if (error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;" ContentAlignment="HorizontalAlignment.Start">
+                    <div class="d-flex align-center justify-space-between flex-wrap gap-3">
+                        <span>@error</span>
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error" Class="text-none" OnClick="CargarAsync">Reintentar</MudButton>
+                    </div>
+                </MudAlert>
+            }
+
+            @if (cargando)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            }
+            else if (!Filtrados.Any() && error is null)
+            {
+                <div class="ew-cliente-vacio">
+                    <MudIcon Icon="@Icons.Material.Outlined.TravelExplore" Size="Size.Large" Style="color: var(--ew-teal);" />
+                    <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">
+                        @(_destinos.Count == 0 ? "Todavía no hay destinos disponibles" : "Sin resultados")
+                    </MudText>
+                    <MudText Typo="Typo.body2" Style="color: #64748b;">
+                        @(_destinos.Count == 0 ? "Volvé pronto: estamos preparando nuevas expediciones." : "Ningún destino coincide con tu búsqueda.")
+                    </MudText>
+                </div>
+            }
+            else
+            {
+                <div class="ew-dest-grid">
+                    @foreach (var d in Filtrados)
+                    {
+                        var ofertas = _ofertas.TryGetValue(d.IdDestino, out var lista) ? lista : [];
+                        <article class="ew-dest-card">
+                            <div class="ew-dest-media">
+                                @if (_imagenes.TryGetValue(d.IdDestino, out var url) && !string.IsNullOrWhiteSpace(url))
+                                {
+                                    <img src="@url" alt="@d.Nombre" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Outlined.Landscape" Size="Size.Large" />
+                                }
+                                <span class="ew-dest-ubic">
+                                    <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" />@Ubicacion(d)
+                                </span>
+                            </div>
+                            <div class="ew-dest-body">
+                                <div class="ew-dest-nombre">@d.Nombre</div>
+                                @if (!string.IsNullOrWhiteSpace(d.Descripcion))
+                                {
+                                    <div class="ew-dest-desc">@d.Descripcion</div>
+                                }
+                                <div class="ew-dest-meta">
+                                    <span>@ofertas.Count @(ofertas.Count == 1 ? "actividad" : "actividades")</span>
+                                    @if (ofertas.Count > 0)
+                                    {
+                                        <span>Desde <span class="ew-precio">@Precio(ofertas.Min(o => o.PrecioBase))</span></span>
+                                    }
+                                </div>
+                                <div class="ew-dest-foot">
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="rounded-pill text-none flex-grow-1"
+                                               Href="@($"/cliente/destinos/{d.IdDestino}")">
+                                        Ver detalles
+                                    </MudButton>
+                                    <MudButton Variant="Variant.Filled" Class="rounded-pill text-none flex-grow-1 exploreway-btn-auth"
+                                               Disabled="@(ofertas.Count == 0)"
+                                               Href="@($"/cliente/reservar/{d.IdDestino}")">
+                                        Reservar
+                                    </MudButton>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        </MudContainer>
+    </div>
+</SoloCliente>
+
+@code {
+    private List<DestinoSalidaDto> _destinos = [];
+    private Dictionary<int, List<DestinoActividadSalida>> _ofertas = [];
+    private Dictionary<int, string?> _imagenes = [];
+    private string _busqueda = string.Empty;
+    private bool cargando = true;
+    private string? error;
+
+    private IEnumerable<DestinoSalidaDto> Filtrados => _destinos.Where(d =>
+        string.IsNullOrWhiteSpace(_busqueda) ||
+        Contiene(d.Nombre) || Contiene(d.Departamento) || Contiene(d.Municipio));
+
+    private bool Contiene(string? texto) =>
+        texto?.Contains(_busqueda.Trim(), StringComparison.OrdinalIgnoreCase) == true;
+
+    private static bool Activo(string? estado) =>
+        string.Equals(estado?.Trim(), "Activo", StringComparison.OrdinalIgnoreCase);
+
+    private static string Ubicacion(DestinoSalidaDto d) =>
+        string.IsNullOrWhiteSpace(d.Municipio) ? d.Departamento : $"{d.Municipio}, {d.Departamento}";
+
+    private static string Precio(decimal valor) => valor.ToString("C2", CultureInfo.GetCultureInfo("en-US"));
+
+    protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+
+        try
+        {
+            _destinos = (await DestinoService.ListarAsync())
+                .Where(d => Activo(d.NombreEstado))
+                .OrderBy(d => d.Nombre)
+                .ToList();
+
+            _ofertas = (await DestinoActividadService.ListarAsync())
+                .Where(o => Activo(o.NombreEstado))
+                .GroupBy(o => o.IdDestino)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var principales = await Task.WhenAll(_destinos.Select(async d =>
+            {
+                try
+                {
+                    var imagenes = await ImagenService.ListarPorDestinoAsync(d.IdDestino);
+                    return (d.IdDestino, Url: (imagenes.FirstOrDefault(i => i.EsPrincipal) ?? imagenes.FirstOrDefault())?.UrlImagen);
+                }
+                catch (Exception ex) when (ex is ApiException or HttpRequestException)
+                {
+                    return (d.IdDestino, Url: (string?)null);
+                }
+            }));
+            _imagenes = principales.ToDictionary(p => p.IdDestino, p => p.Url);
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+}

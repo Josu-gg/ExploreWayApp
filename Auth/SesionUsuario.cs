@@ -17,6 +17,8 @@ namespace ExploreWayApp.Auth
 
         public bool EsAdmin => string.Equals(NombreRol, "Admin", StringComparison.OrdinalIgnoreCase);
 
+        public bool EsCliente => string.Equals(NombreRol, "Cliente", StringComparison.OrdinalIgnoreCase);
+
         public bool EsGuia => string.Equals(NombreRol, "Guia", StringComparison.OrdinalIgnoreCase);
 
         public bool Autenticado => !string.IsNullOrWhiteSpace(Token);
@@ -41,6 +43,13 @@ namespace ExploreWayApp.Auth
         public void ActualizarFoto(string? foto)
         {
             Foto = string.IsNullOrWhiteSpace(foto) ? null : foto;
+            FotoCambiada?.Invoke();
+        }
+
+        // Tras editar el perfil: refresca el nombre y avisa a la barra superior (mismo evento que la foto).
+        public void ActualizarNombre(string nombreCompleto)
+        {
+            NombreCompleto = nombreCompleto.Trim();
             FotoCambiada?.Invoke();
         }
 

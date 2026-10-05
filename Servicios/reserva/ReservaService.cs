@@ -13,6 +13,9 @@ public sealed class ReservaService(HttpClient http) : IReservaService
     public Task<List<ReservaSalida>> ListarPorGuiaAsync(int idGuia) =>
         http.LeerTodasLasPaginasAsync<ReservaSalida>($"{Url}/guia/{idGuia}");
 
+    public Task<List<ReservaSalida>> ListarPorClienteAsync(int idCliente) =>
+        http.LeerTodasLasPaginasAsync<ReservaSalida>($"{Url}/cliente/{idCliente}");
+
     public Task<ReservaSalida?> CrearAsync(ReservaGuardar dto) =>
         http.EnviarAsync<ReservaSalida>(HttpMethod.Post, Url, dto);
 

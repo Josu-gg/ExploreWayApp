@@ -1,0 +1,533 @@
+@page "/cliente/reservar"
+@page "/cliente/reservar/{IdDestino:int}"
+
+@using System.Globalization
+@using ExploreWayApp.Components.Compartidos
+@using ExploreWayApp.DTOs.Cliente
+@using ExploreWayApp.DTOs.Destino
+@using ExploreWayApp.DTOs.DestinoActividad
+@using ExploreWayApp.DTOs.DisponibilidadGuia
+@using ExploreWayApp.DTOs.guia
+@using ExploreWayApp.DTOs.reserva
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Cliente
+@using ExploreWayApp.Servicios.Destino
+@using ExploreWayApp.Servicios.DestinoActividad
+@using ExploreWayApp.Servicios.DisponibilidadGuia
+@using ExploreWayApp.Servicios.Guia
+@using ExploreWayApp.Servicios.GuiaActividad
+@using ExploreWayApp.Servicios.GuiaDestino
+@using ExploreWayApp.Servicios.Reserva
+
+@inject IDestinoService DestinoService
+@inject IDestinoActividadService DestinoActividadService
+@inject IGuiaService GuiaService
+@inject IGuiaDestinoService GuiaDestinoService
+@inject IGuiaActividadService GuiaActividadService
+@inject IDisponibilidadGuiaService DisponibilidadService
+@inject IReservaService ReservaService
+@inject IClienteService ClienteService
+@inject NavigationManager Navegacion
+@inject ISnackbar Snackbar
+
+<PageTitle>Reservar — ExploreWay</PageTitle>
+
+<SoloCliente>
+    <div class="ew-cliente-page">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
+            <header class="ew-admin-head">
+                <div>
+                    <span class="ew-admin-kicker">Nueva reserva</span>
+                    <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Reservá tu expedición</MudText>
+                    <MudText Typo="Typo.body1" Class="exploreway-section-lead">
+                        Elegí el destino, la actividad, tu guía y el horario que mejor te quede.
+                    </MudText>
+                </div>
+            </header>
+
+            @if (error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;" ContentAlignment="HorizontalAlignment.Start">
+                    <div class="d-flex align-center justify-space-between flex-wrap gap-3">
+                        <span>@error</span>
+                        @if (_cliente is null)
+                        {
+                            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error" Class="text-none" OnClick="CargarAsync">Reintentar</MudButton>
+                        }
+                    </div>
+                </MudAlert>
+            }
+
+            @if (cargando)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            }
+            else if (_cliente is not null)
+            {
+                <div class="ew-reserva-layout">
+                    <div>
+                        @* 1 · DESTINO *@
+                        <section class="ew-paso">
+                            <div class="ew-paso-titulo"><span class="ew-paso-num">1</span> Destino</div>
+                            <MudSelect T="int?" Label="Destino" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                       AnchorOrigin="Origin.BottomCenter"
+                                       Value="_idDestino" ValueChanged="AlElegirDestino">
+                                @foreach (var d in _destinos)
+                                {
+                                    <MudSelectItem T="int?" Value="@d.IdDestino">@d.Nombre</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </section>
+
+                        @* 2 · ACTIVIDAD *@
+                        @if (_idDestino is not null)
+                        {
+                            <section class="ew-paso">
+                                <div class="ew-paso-titulo"><span class="ew-paso-num">2</span> Actividad</div>
+                                @if (OfertasDelDestino.Count == 0)
+                                {
+                                    <MudText Typo="Typo.body2" Style="color: #64748b;">Este destino no tiene actividades disponibles por ahora.</MudText>
+                                }
+                                else
+                                {
+                                    <MudSelect T="int?" Label="Actividad" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                               AnchorOrigin="Origin.BottomCenter"
+                                               Value="_idOferta" ValueChanged="AlElegirOferta">
+                                        @foreach (var o in OfertasDelDestino)
+                                        {
+                                            <MudSelectItem T="int?" Value="@o.IdDestinoActividad">
+                                                @($"{o.NombreActividad} · {Duracion(o.DuracionMinutos)} · {Precio(o.PrecioBase)} por persona")
+                                            </MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                    @if (!string.IsNullOrWhiteSpace(Oferta?.DescripcionActividad))
+                                    {
+                                        <MudText Typo="Typo.caption" Class="mt-2 d-block" Style="color: #64748b;">@Oferta.DescripcionActividad</MudText>
+                                    }
+                                }
+                            </section>
+                        }
+
+                        @* 3 · GUÍA *@
+                        @if (Oferta is not null)
+                        {
+                            <section class="ew-paso">
+                                <div class="ew-paso-titulo"><span class="ew-paso-num">3</span> Guía</div>
+                                @if (_cargandoGuias)
+                                {
+                                    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                                }
+                                else if (_guiasElegibles.Count == 0)
+                                {
+                                    <MudText Typo="Typo.body2" Style="color: #64748b;">
+                                        Todavía no hay guías disponibles para esta actividad en este destino.
+                                    </MudText>
+                                }
+                                else
+                                {
+                                    <div class="d-flex flex-column gap-2">
+                                        @foreach (var g in _guiasElegibles)
+                                        {
+                                            var idGuia = g.IdGuia;
+                                            <button type="button" class="ew-guia-opcion @(idGuia == _idGuia ? "activa" : "")"
+                                                    @onclick="() => AlElegirGuiaAsync(idGuia)">
+                                                <MudAvatar Color="Color.Primary" Size="Size.Medium">
+                                                    @if (!string.IsNullOrWhiteSpace(g.Foto))
+                                                    {
+                                                        <img src="@g.Foto" alt="@NombreGuia(g)" style="width:100%;height:100%;object-fit:cover;" />
+                                                    }
+                                                    else
+                                                    {
+                                                        @Iniciales(NombreGuia(g))
+                                                    }
+                                                </MudAvatar>
+                                                <div style="min-width: 0; flex: 1;">
+                                                    <div class="font-weight-bold">@NombreGuia(g)</div>
+                                                    <MudText Typo="Typo.caption" Style="color: #64748b;">
+                                                        ★ @((g.CalificacionPromedio ?? 0).ToString("0.0", CultureInfo.InvariantCulture))
+                                                        @(g.PrimerosAuxilios ? " · Primeros auxilios" : "")
+                                                    </MudText>
+                                                </div>
+                                                @if (idGuia == _idGuia)
+                                                {
+                                                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Primary" />
+                                                }
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                            </section>
+                        }
+
+                        @* 4 · FECHA Y HORA *@
+                        @if (_idGuia is not null)
+                        {
+                            <section class="ew-paso">
+                                <div class="ew-paso-titulo"><span class="ew-paso-num">4</span> Fecha y hora</div>
+                                @if (_cargandoDisponibilidad)
+                                {
+                                    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                                }
+                                else if (_disponibilidad.Count == 0)
+                                {
+                                    <MudText Typo="Typo.body2" Style="color: #64748b;">
+                                        Este guía no tiene horarios disponibles por ahora. Probá con otro guía.
+                                    </MudText>
+                                }
+                                else
+                                {
+                                    <MudGrid Spacing="2">
+                                        <MudItem xs="12" sm="6">
+                                            <MudDatePicker Label="Fecha del recorrido"
+                                                           Variant="Variant.Outlined"
+                                                           Margin="Margin.Dense"
+                                                           DateFormat="dd/MM/yyyy"
+                                                           MinDate="DateTime.Today"
+                                                           IsDateDisabledFunc="FechaNoDisponible"
+                                                           Date="_fecha" DateChanged="AlElegirFecha" />
+                                        </MudItem>
+                                        <MudItem xs="12" sm="6">
+                                            <MudSelect T="TimeOnly?" Label="Hora de inicio" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                                       AnchorOrigin="Origin.BottomCenter"
+                                                       Disabled="@(_fecha is null || HorasDisponibles.Count == 0)"
+                                                       Value="_hora" ValueChanged="@(v => _hora = v)">
+                                                @foreach (var h in HorasDisponibles)
+                                                {
+                                                    <MudSelectItem T="TimeOnly?" Value="@((TimeOnly?)h)">
+                                                        @($"{h:HH:mm} – {h.AddMinutes(Oferta!.DuracionMinutos):HH:mm}")
+                                                    </MudSelectItem>
+                                                }
+                                            </MudSelect>
+                                        </MudItem>
+                                    </MudGrid>
+                                    <MudText Typo="Typo.caption" Class="mt-2 d-block" Style="color: #64748b;">
+                                        Solo se habilitan los días y horarios en los que el guía está disponible.
+                                    </MudText>
+                                    @if (_fecha is not null && HorasDisponibles.Count == 0)
+                                    {
+                                        <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3" Style="border-radius: 12px;">
+                                            La actividad dura @Duracion(Oferta!.DuracionMinutos) y no entra en los horarios libres de ese día.
+                                        </MudAlert>
+                                    }
+                                }
+                            </section>
+                        }
+
+                        @* 5 · DETALLES *@
+                        @if (_hora is not null)
+                        {
+                            <section class="ew-paso">
+                                <div class="ew-paso-titulo"><span class="ew-paso-num">5</span> Detalles</div>
+                                <MudGrid Spacing="2">
+                                    <MudItem xs="12" sm="4">
+                                        <MudNumericField T="int" Label="Personas" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                                         Min="1" Max="100" @bind-Value="_personas" />
+                                    </MudItem>
+                                    <MudItem xs="12">
+                                        <MudTextField T="string" Label="Observaciones (opcional)" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                                      Lines="3" Counter="500" MaxLength="500" @bind-Value="_observaciones" />
+                                    </MudItem>
+                                </MudGrid>
+                            </section>
+                        }
+                    </div>
+
+                    @* RESUMEN *@
+                    <aside class="ew-resumen">
+                        <MudText Typo="Typo.h6" Class="font-weight-bold mb-2">Resumen</MudText>
+                        <div class="ew-resumen-linea"><span>Destino</span><strong>@(Destino?.Nombre ?? "—")</strong></div>
+                        <div class="ew-resumen-linea"><span>Actividad</span><strong>@(Oferta?.NombreActividad ?? "—")</strong></div>
+                        <div class="ew-resumen-linea"><span>Guía</span><strong>@(GuiaElegido is null ? "—" : NombreGuia(GuiaElegido))</strong></div>
+                        <div class="ew-resumen-linea"><span>Fecha</span><strong>@(_fecha?.ToString("dd/MM/yyyy") ?? "—")</strong></div>
+                        <div class="ew-resumen-linea">
+                            <span>Horario</span>
+                            <strong>@(_hora is null || Oferta is null ? "—" : $"{_hora:HH:mm} – {_hora.Value.AddMinutes(Oferta.DuracionMinutos):HH:mm}")</strong>
+                        </div>
+                        <div class="ew-resumen-linea"><span>Personas</span><strong>@_personas</strong></div>
+                        <div class="ew-resumen-total">
+                            <span>Total</span>
+                            <span class="ew-precio" style="font-size: 1.4rem;">@Precio(Total)</span>
+                        </div>
+                        <MudButton Variant="Variant.Filled" FullWidth="true" Size="Size.Large"
+                                   Class="rounded-pill mt-4 py-3 text-none exploreway-btn-auth"
+                                   Disabled="@(!PuedeReservar || guardando)"
+                                   OnClick="ReservarAsync">
+                            @if (guardando)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="color: #ffffff;" />
+                            }
+                            @(guardando ? "Reservando…" : "Confirmar reserva")
+                        </MudButton>
+                        <MudText Typo="Typo.caption" Class="mt-3 d-block" Style="color: #64748b;">
+                            Tu reserva quedará pendiente hasta que el guía la acepte. Podés cancelarla desde “Mis reservas”.
+                        </MudText>
+                    </aside>
+                </div>
+            }
+        </MudContainer>
+    </div>
+</SoloCliente>
+
+@code {
+    [Parameter] public int? IdDestino { get; set; }
+
+    // Permite llegar con la actividad ya elegida: /cliente/reservar/3?actividad=7
+    [SupplyParameterFromQuery(Name = "actividad")] public int? IdActividadInicial { get; set; }
+
+    private ClienteSalida? _cliente;
+    private List<DestinoSalidaDto> _destinos = [];
+    private List<DestinoActividadSalida> _ofertas = [];
+    private List<GuiaSalida> _guias = [];
+    private List<ExploreWayApp.DTOs.GuiaDestino.GuiaDestinoSalida> _guiaDestinos = [];
+    private List<ExploreWayApp.DTOs.GuiaActividad.GuiaActividadSalida> _guiaActividades = [];
+    private List<GuiaSalida> _guiasElegibles = [];
+    private List<DisponibilidadGuiaSalida> _disponibilidad = [];
+
+    private int? _idDestino;
+    private int? _idOferta;
+    private int? _idGuia;
+    private DateTime? _fecha;
+    private TimeOnly? _hora;
+    private int _personas = 1;
+    private string? _observaciones;
+
+    private bool cargando = true;
+    private bool _cargandoGuias;
+    private bool _cargandoDisponibilidad;
+    private bool guardando;
+    private string? error;
+
+    private DestinoSalidaDto? Destino => _destinos.FirstOrDefault(d => d.IdDestino == _idDestino);
+    private DestinoActividadSalida? Oferta => _ofertas.FirstOrDefault(o => o.IdDestinoActividad == _idOferta);
+    private GuiaSalida? GuiaElegido => _guiasElegibles.FirstOrDefault(g => g.IdGuia == _idGuia);
+    private List<DestinoActividadSalida> OfertasDelDestino => _ofertas.Where(o => o.IdDestino == _idDestino).ToList();
+    private decimal Total => (Oferta?.PrecioBase ?? 0) * Math.Max(_personas, 0);
+
+    private bool PuedeReservar =>
+        _cliente is not null && Oferta is not null && _idGuia is not null &&
+        _fecha is not null && _hora is not null && _personas >= 1;
+
+    // Horas de inicio posibles: cada 30 min dentro de las franjas del guía para ese día,
+    // de modo que la actividad termine antes del cierre de la franja.
+    private List<TimeOnly> HorasDisponibles
+    {
+        get
+        {
+            if (_fecha is null || Oferta is null) return [];
+
+            var dia = DateOnly.FromDateTime(_fecha.Value);
+            var duracion = TimeSpan.FromMinutes(Oferta.DuracionMinutos);
+            var ahora = TimeOnly.FromDateTime(DateTime.Now);
+            var horas = new SortedSet<TimeOnly>();
+
+            foreach (var franja in _disponibilidad.Where(f => f.Fecha == dia))
+            {
+                for (var t = franja.HoraInicio.ToTimeSpan(); t + duracion <= franja.HoraFin.ToTimeSpan(); t += TimeSpan.FromMinutes(30))
+                {
+                    var hora = TimeOnly.FromTimeSpan(t);
+                    if (dia == DateOnly.FromDateTime(DateTime.Today) && hora <= ahora) continue;
+                    horas.Add(hora);
+                }
+            }
+
+            return horas.ToList();
+        }
+    }
+
+    private static bool Activo(string? estado) =>
+        string.Equals(estado?.Trim(), "Activo", StringComparison.OrdinalIgnoreCase);
+
+    private static string Precio(decimal valor) => valor.ToString("C2", CultureInfo.GetCultureInfo("en-US"));
+
+    private static string NombreGuia(GuiaSalida g) => $"{g.NombrePersona} {g.ApellidoPersona}".Trim();
+
+    private static string Iniciales(string nombre) =>
+        string.Concat(nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpper(p[0])));
+
+    private static string Duracion(int minutos) =>
+        minutos < 60 ? $"{minutos} min"
+        : minutos % 60 == 0 ? $"{minutos / 60} h"
+        : $"{minutos / 60} h {minutos % 60} min";
+
+    private bool FechaNoDisponible(DateTime fecha) =>
+        !_disponibilidad.Any(f => f.Fecha == DateOnly.FromDateTime(fecha));
+
+    protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+
+        try
+        {
+            _cliente = await ClienteService.ObtenerMiPerfilAsync();
+
+            _destinos = (await DestinoService.ListarAsync())
+                .Where(d => Activo(d.NombreEstado))
+                .OrderBy(d => d.Nombre)
+                .ToList();
+
+            _ofertas = (await DestinoActividadService.ListarAsync())
+                .Where(o => Activo(o.NombreEstado))
+                .OrderBy(o => o.NombreActividad)
+                .ToList();
+
+            if (IdDestino is not null && _destinos.Any(d => d.IdDestino == IdDestino))
+            {
+                _idDestino = IdDestino;
+                if (IdActividadInicial is not null && OfertasDelDestino.Any(o => o.IdDestinoActividad == IdActividadInicial))
+                {
+                    _idOferta = IdActividadInicial;
+                    await CargarGuiasAsync();
+                }
+            }
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void AlElegirDestino(int? id)
+    {
+        _idDestino = id;
+        _idOferta = null;
+        ReiniciarDesdeGuia();
+        _guiasElegibles = [];
+        // Con una sola actividad se elige sola, para ahorrar un paso.
+        if (OfertasDelDestino.Count == 1) _ = AlElegirOferta(OfertasDelDestino[0].IdDestinoActividad);
+    }
+
+    private async Task AlElegirOferta(int? id)
+    {
+        _idOferta = id;
+        ReiniciarDesdeGuia();
+        await CargarGuiasAsync();
+    }
+
+    private void ReiniciarDesdeGuia()
+    {
+        _idGuia = null;
+        _disponibilidad = [];
+        _fecha = null;
+        _hora = null;
+    }
+
+    // Un guía es elegible si está activo y disponible, atiende el destino y realiza la actividad (asignaciones activas).
+    private async Task CargarGuiasAsync()
+    {
+        if (Oferta is null) return;
+
+        _cargandoGuias = true;
+        error = null;
+        StateHasChanged();
+
+        try
+        {
+            if (_guias.Count == 0) _guias = await GuiaService.ListarAsync();
+            if (_guiaDestinos.Count == 0) _guiaDestinos = await GuiaDestinoService.ListarAsync();
+            if (_guiaActividades.Count == 0) _guiaActividades = await GuiaActividadService.ListarAsync();
+
+            var delDestino = _guiaDestinos.Where(x => x.IdDestino == Oferta.IdDestino && Activo(x.NombreEstado)).Select(x => x.IdGuia).ToHashSet();
+            var deLaActividad = _guiaActividades.Where(x => x.IdActividad == Oferta.IdActividad && Activo(x.NombreEstado)).Select(x => x.IdGuia).ToHashSet();
+
+            _guiasElegibles = _guias
+                .Where(g => Activo(g.NombreEstado) && g.EstadoDisponibilidad
+                            && delDestino.Contains(g.IdGuia) && deLaActividad.Contains(g.IdGuia))
+                .OrderByDescending(g => g.CalificacionPromedio ?? 0)
+                .ThenBy(NombreGuia)
+                .ToList();
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            _cargandoGuias = false;
+        }
+    }
+
+    private async Task AlElegirGuiaAsync(int idGuia)
+    {
+        _idGuia = idGuia;
+        _fecha = null;
+        _hora = null;
+        _disponibilidad = [];
+        _cargandoDisponibilidad = true;
+        error = null;
+
+        try
+        {
+            _disponibilidad = await DisponibilidadService.ListarPorGuiaAsync(idGuia);
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            _cargandoDisponibilidad = false;
+        }
+    }
+
+    private void AlElegirFecha(DateTime? fecha)
+    {
+        _fecha = fecha;
+        _hora = null;
+    }
+
+    private async Task ReservarAsync()
+    {
+        if (guardando || !PuedeReservar || _cliente is null || Oferta is null) return;
+
+        guardando = true;
+        error = null;
+
+        try
+        {
+            await ReservaService.CrearAsync(new ReservaGuardar
+            {
+                IdCliente = _cliente.IdCliente,
+                IdGuia = _idGuia,
+                IdDestinoActividad = Oferta.IdDestinoActividad,
+                FechaRecorrido = DateOnly.FromDateTime(_fecha!.Value),
+                HoraInicio = _hora,
+                CantidadPersonas = _personas,
+                Observaciones = string.IsNullOrWhiteSpace(_observaciones) ? null : _observaciones.Trim()
+            });
+
+            Snackbar.Add("¡Reserva creada! Queda pendiente de confirmación del guía.", Severity.Success);
+            Navegacion.NavigateTo("/cliente/reservas");
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+}

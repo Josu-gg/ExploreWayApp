@@ -7,4 +7,7 @@ public interface ICloudinaryService
 
     // Sube la foto de perfil de un guía y devuelve su URL https segura.
     Task<string> SubirFotoGuiaAsync(Stream contenido, string nombreArchivo);
+
+    // Sube la foto de perfil de un cliente y devuelve su URL https segura.
+    Task<string> SubirFotoClienteAsync(Stream contenido, string nombreArchivo);
 }

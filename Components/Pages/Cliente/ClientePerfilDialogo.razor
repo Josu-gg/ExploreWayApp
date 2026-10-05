@@ -1,0 +1,167 @@
+@using ExploreWayApp.Auth
+@using ExploreWayApp.Components.Compartidos
+@using ExploreWayApp.Config
+@using ExploreWayApp.DTOs.Cliente
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Cliente
+@using ExploreWayApp.Servicios.Imagenes
+
+@inject IClienteService ClienteService
+@inject ICloudinaryService CloudinaryService
+@inject SesionUsuario Sesion
+@inject FotoPerfilLocal FotosLocal
+
+<MudDialog Class="exploreway-destino-dialogo">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Person" Style="color: var(--ew-primary);" />
+            <MudText Typo="Typo.h6" Class="font-weight-bold">Editar mi perfil</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        @if (error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4" Style="border-radius: 12px;">
+                @error
+            </MudAlert>
+        }
+
+        <MudForm @ref="_formulario" Model="modelo">
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudText Typo="Typo.body2" Class="mb-2" Style="color: #64748b;">Foto de perfil</MudText>
+                    <SelectorFoto UrlActual="@FotoActual" PermitirQuitar="true"
+                                  @bind-Archivo="_foto" @bind-Quitar="_quitarFoto" Deshabilitado="guardando" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Nombre" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="100"
+                                  @bind-Value="modelo.Nombre" For="@(() => modelo.Nombre)" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Apellido" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="100"
+                                  @bind-Value="modelo.Apellido" For="@(() => modelo.Apellido)" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Teléfono" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="20"
+                                  @bind-Value="modelo.Telefono" For="@(() => modelo.Telefono)" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker Label="Fecha de nacimiento" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                   Editable="true" DateFormat="dd/MM/yyyy" MaxDate="DateTime.Today.AddDays(-1)"
+                                   @bind-Date="_nacimiento" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Dirección" Variant="Variant.Outlined" Margin="Margin.Dense" Counter="250" MaxLength="250"
+                                  @bind-Value="modelo.Direccion" For="@(() => modelo.Direccion)" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Class="text-none" Disabled="guardando" OnClick="Cancelar">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Class="rounded-pill px-6 text-none exploreway-btn-auth"
+                   Disabled="guardando"
+                   OnClick="GuardarAsync">
+            @if (guardando)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="color: #ffffff;" />
+            }
+            @(guardando ? "Guardando…" : "Guardar")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public ClienteSalida Cliente { get; set; } = default!;
+
+    // Foto que se está mostrando hoy (puede venir de la API, del respaldo local o de la sesión).
+    [Parameter] public string? FotoActual { get; set; }
+
+    private readonly ClienteModificar modelo = new();
+    private MudForm _formulario = default!;
+    private DateTime? _nacimiento;
+    private IBrowserFile? _foto;
+    private bool _quitarFoto;
+    private string? error;
+    private bool guardando;
+
+    protected override void OnInitialized()
+    {
+        modelo.Nombre = Cliente.Nombre;
+        modelo.Apellido = Cliente.Apellido;
+        modelo.Telefono = Cliente.Telefono;
+        modelo.Direccion = Cliente.Direccion;
+        modelo.IdEstado = Cliente.IdEstado;
+        _nacimiento = Cliente.FechaNacimiento?.ToDateTime(TimeOnly.MinValue);
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task GuardarAsync()
+    {
+        if (guardando) return;
+
+        await _formulario.ValidateAsync();
+        if (!_formulario.IsValid) return;
+
+        guardando = true;
+        error = null;
+
+        try
+        {
+            modelo.Nombre = modelo.Nombre.Trim();
+            modelo.Apellido = modelo.Apellido.Trim();
+            modelo.Telefono = modelo.Telefono.Trim();
+            modelo.Direccion = string.IsNullOrWhiteSpace(modelo.Direccion) ? null : modelo.Direccion.Trim();
+            modelo.FechaNacimiento = _nacimiento is null ? null : DateOnly.FromDateTime(_nacimiento.Value);
+
+            // La API reemplaza la foto con lo que recibe (null la borra): se reenvía la actual si no hay cambios.
+            var fotoFinal = FotoActual;
+            if (_foto is not null)
+            {
+                await using var flujo = _foto.OpenReadStream(LimitesImagen.TamanoMaximoBytes);
+                fotoFinal = await CloudinaryService.SubirFotoClienteAsync(flujo, _foto.Name);
+            }
+            else if (_quitarFoto)
+            {
+                fotoFinal = null;
+            }
+            modelo.Foto = fotoFinal;
+
+            var actualizado = await ClienteService.ModificarAsync(Cliente.IdCliente, modelo);
+
+            // La URL subida es la fuente de verdad en pantalla si la API no la devuelve.
+            if (_foto is not null || _quitarFoto)
+            {
+                var urlFinal = _quitarFoto ? null
+                    : string.IsNullOrWhiteSpace(actualizado?.Foto) ? fotoFinal : actualizado!.Foto;
+                FotosLocal.Guardar(Cliente.IdPersona, urlFinal);
+                Sesion.ActualizarFoto(urlFinal);
+            }
+            Sesion.ActualizarNombre($"{modelo.Nombre} {modelo.Apellido}");
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (InvalidOperationException ex)
+        {
+            error = ex.Message;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+}

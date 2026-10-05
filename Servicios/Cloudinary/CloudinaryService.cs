@@ -16,6 +16,9 @@ public sealed class CloudinaryService(IOptions<CloudinaryOptions> opciones) : IC
     public Task<string> SubirFotoGuiaAsync(Stream contenido, string nombreArchivo) =>
         SubirAsync(contenido, nombreArchivo, "exploreway/guias");
 
+    public Task<string> SubirFotoClienteAsync(Stream contenido, string nombreArchivo) =>
+        SubirAsync(contenido, nombreArchivo, "exploreway/clientes");
+
     private async Task<string> SubirAsync(Stream contenido, string nombreArchivo, string carpeta)
     {
         if (!_opciones.EstaConfigurado)

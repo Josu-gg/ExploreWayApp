@@ -13,6 +13,7 @@ using ExploreWayApp.Servicios.GuiaDestino;
 using ExploreWayApp.Servicios.ImagenDestino;
 using ExploreWayApp.Servicios.Imagenes;
 using ExploreWayApp.Servicios.Reserva;
+using ExploreWayApp.Servicios.Cliente;
 using ExploreWayApp.Servicios.Estado;
 using ExploreWayApp.Servicios.Rol;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -65,6 +66,7 @@ builder.Services.AddScoped<IGuiaDestinoService, GuiaDestinoService>();
 builder.Services.AddScoped<IImagenDestinoService, ImagenDestinoService>();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IReservaService, ReservaService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
 
 
 

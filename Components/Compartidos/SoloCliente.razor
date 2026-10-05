@@ -1,0 +1,34 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using ExploreWayApp.Auth
+
+@inject SesionUsuario Sesion
+
+@* Restringe una vista al rol Cliente. Se muestra dentro del MainLayout. *@
+<AuthorizeView Roles="Cliente">
+    <Authorized>
+        @ChildContent
+    </Authorized>
+    <NotAuthorized>
+        <div class="ew-cliente-page">
+            <div class="ew-cliente-vacio">
+                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Style="color: var(--ew-primary);" />
+                @if (Sesion.Autenticado)
+                {
+                    <MudText Typo="Typo.h5" Class="font-weight-bold mt-3">Acceso restringido</MudText>
+                    <MudText Typo="Typo.body2" Class="mb-5" Style="color: #64748b;">Esta sección es solo para clientes.</MudText>
+                    <MudButton Variant="Variant.Filled" Href="/" Class="rounded-pill px-6 text-none exploreway-btn-auth">Volver al inicio</MudButton>
+                }
+                else
+                {
+                    <MudText Typo="Typo.h5" Class="font-weight-bold mt-3">Iniciá sesión para continuar</MudText>
+                    <MudText Typo="Typo.body2" Class="mb-5" Style="color: #64748b;">Necesitás una cuenta de cliente para ver esta sección.</MudText>
+                    <MudButton Variant="Variant.Filled" Href="/login" Class="rounded-pill px-6 text-none exploreway-btn-auth">Iniciar sesión</MudButton>
+                }
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

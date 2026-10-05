@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
 @using MudBlazor
 @using Microsoft.AspNetCore.Components.Authorization
 @using ExploreWayApp.Auth
@@ -7,6 +8,9 @@
 @inject NavigationManager NavManager
 @inject SesionUsuario Sesion
 @inject IAuthService AuthService
+@inject IDialogService Dialogos
+@inject ExploreWayApp.Servicios.Cliente.IClienteService ClienteService
+@inject ExploreWayApp.Servicios.Imagenes.FotoPerfilLocal FotosLocal
 
 @* Proveedores globales de MudBlazor con la paleta ExploreWay *@
 <MudThemeProvider Theme="TemaExploreWay.Instancia" />
@@ -15,6 +19,9 @@
 <MudPopoverProvider />
 
 <MudLayout Class="exploreway-layout">
+
+    @* Cierra el menú de usuario al hacer clic fuera. Va fuera del AppBar: su transform atraparía el overlay fijo. *@
+    <MudOverlay @bind-Visible="_menuAbierto" AutoClose="true" ZIndex="1150" />
 
     @* APPBAR ADAPTATIVA — TRANSPARENTE SOBRE EL HERO, SÓLIDA AL BAJAR *@
     <MudAppBar Elevation="0" Dense="false" Class="exploreway-appbar px-4 px-md-8">
@@ -31,9 +38,17 @@
         <MudSpacer />
 
         <nav class="exploreway-nav d-none d-md-flex align-center" aria-label="Secciones de la página">
-            <a href="#inicio" class="exploreway-navlink active" data-section-link="inicio">Inicio</a>
-            <a href="/destinos" class="exploreway-navlink">Destinos</a>
-            <a href="#nosotros" class="exploreway-navlink" data-section-link="nosotros">Nosotros</a>
+            <a href="/#inicio" class="exploreway-navlink active" data-section-link="inicio">Inicio</a>
+            <AuthorizeView Roles="Cliente">
+                <Authorized Context="_cli">
+                    <a href="/cliente/destinos" class="exploreway-navlink">Destinos</a>
+                    <a href="/cliente/reservas" class="exploreway-navlink">Mis reservas</a>
+                </Authorized>
+                <NotAuthorized Context="_nocli">
+                    <a href="/destinos" class="exploreway-navlink">Destinos</a>
+                </NotAuthorized>
+            </AuthorizeView>
+            <a href="/#nosotros" class="exploreway-navlink" data-section-link="nosotros">Nosotros</a>
             <span class="exploreway-nav-pill" aria-hidden="true"></span>
         </nav>
 
@@ -42,31 +57,58 @@
         <AuthorizeView>
             <Authorized>
                 <div class="d-none d-sm-flex align-center gap-3">
-                    <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true">
-                        <ActivatorContent Context="_act">
-                            <div class="d-flex align-center gap-2" style="cursor: pointer;">
-                                <MudAvatar Color="Color.Primary" Size="Size.Medium">@if (!string.IsNullOrWhiteSpace(Sesion.Foto)){<img src="@Sesion.Foto" alt="@Sesion.NombreCompleto" style="width:100%;height:100%;object-fit:cover;" />}else{@Iniciales}</MudAvatar>
-                                <div class="d-flex flex-column" style="line-height: 1.2;">
-                                    <MudText Typo="Typo.body2" Class="font-weight-bold">@Sesion.NombreCompleto</MudText>
-                                    <MudText Typo="Typo.caption">@Sesion.NombreRol</MudText>
-                                </div>
-                                <MudIcon Icon="@Icons.Material.Filled.ExpandMore" Size="Size.Small" />
+                    <div class="ew-usermenu">
+                        <div class="ew-usermenu-activador" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="@_menuAbierto.ToString().ToLowerInvariant()"
+                             @onclick="AlternarMenu" @onkeydown="AlPulsarTecla">
+                            <MudAvatar Color="Color.Primary" Size="Size.Medium">@if (!string.IsNullOrWhiteSpace(Sesion.Foto)){<img src="@Sesion.Foto" alt="@Sesion.NombreCompleto" style="width:100%;height:100%;object-fit:cover;" />}else{@Iniciales}</MudAvatar>
+                            <div class="d-flex flex-column" style="line-height: 1.2;">
+                                <MudText Typo="Typo.body2" Class="font-weight-bold">@Sesion.NombreCompleto</MudText>
+                                <MudText Typo="Typo.caption">@Sesion.NombreRol</MudText>
                             </div>
-                        </ActivatorContent>
-                        <ChildContent>
-                            <MudMenuItem Disabled="true">@Sesion.Correo</MudMenuItem>
+                            <MudIcon Icon="@(_menuAbierto ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" Size="Size.Small" />
+                        </div>
+
+                        <MudPopover Open="_menuAbierto" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
+                                    Style="z-index: 1300;" Class="ew-usermenu-panel">
+                            <div class="ew-menu-cabecera">
+                                <MudAvatar Color="Color.Primary" Style="width: 56px; height: 56px; font-size: 1.2rem;">@if (!string.IsNullOrWhiteSpace(Sesion.Foto)){<img src="@Sesion.Foto" alt="@Sesion.NombreCompleto" style="width:100%;height:100%;object-fit:cover;" />}else{@Iniciales}</MudAvatar>
+                                <div class="ew-menu-cabecera-datos">
+                                    <strong>@Sesion.NombreCompleto</strong>
+                                    <span>@Sesion.Correo</span>
+                                    <span class="ew-menu-rol">@Sesion.NombreRol</span>
+                                </div>
+                            </div>
                             <MudDivider />
+                            @if (Sesion.EsCliente)
+                            {
+                                <a class="ew-usermenu-item" href="/cliente/perfil" @onclick="CerrarMenu">
+                                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" /> Ver mi perfil
+                                </a>
+                                <button type="button" class="ew-usermenu-item" @onclick="EditarPerfilAsync">
+                                    <MudIcon Icon="@Icons.Material.Filled.PhotoCamera" Size="Size.Small" /> Editar perfil y foto
+                                </button>
+                                <a class="ew-usermenu-item" href="/cliente/reservas" @onclick="CerrarMenu">
+                                    <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Small" /> Mis reservas
+                                </a>
+                            }
                             @if (Sesion.EsAdmin)
                             {
-                                <MudMenuItem Icon="@Icons.Material.Filled.Dashboard" Href="/admin">Panel de administración</MudMenuItem>
+                                <a class="ew-usermenu-item" href="/admin" @onclick="CerrarMenu">
+                                    <MudIcon Icon="@Icons.Material.Filled.Dashboard" Size="Size.Small" /> Panel de administración
+                                </a>
                             }
                             @if (Sesion.EsGuia)
                             {
-                                <MudMenuItem Icon="@Icons.Material.Filled.Badge" Href="/guia">Panel de guía</MudMenuItem>
+                                <a class="ew-usermenu-item" href="/guia" @onclick="CerrarMenu">
+                                    <MudIcon Icon="@Icons.Material.Filled.Badge" Size="Size.Small" /> Panel de guía
+                                </a>
                             }
-                            <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="CerrarSesion">Cerrar sesión</MudMenuItem>
-                        </ChildContent>
-                    </MudMenu>
+                            <MudDivider />
+                            <button type="button" class="ew-usermenu-item ew-usermenu-item--salir" @onclick="CerrarSesion">
+                                <MudIcon Icon="@Icons.Material.Filled.Logout" Size="Size.Small" /> Cerrar sesión
+                            </button>
+                        </MudPopover>
+                    </div>
                 </div>
             </Authorized>
             <NotAuthorized>
@@ -121,9 +163,27 @@
                 Inicio
             </MudNavLink>
 
-            <MudNavLink Href="/destinos" Icon="@Icons.Material.Filled.Landscape" OnClick="@CloseDrawer">
-                Destinos
-            </MudNavLink>
+            <AuthorizeView Roles="Cliente">
+                <Authorized Context="_cli">
+                    <MudNavLink Href="/cliente/destinos" Icon="@Icons.Material.Filled.Landscape" OnClick="@CloseDrawer">
+                        Destinos
+                    </MudNavLink>
+                    <MudNavLink Href="/cliente/reservas" Icon="@Icons.Material.Filled.History" OnClick="@CloseDrawer">
+                        Mis reservas
+                    </MudNavLink>
+                    <MudNavLink Href="/cliente/perfil" Icon="@Icons.Material.Filled.Person" OnClick="@CloseDrawer">
+                        Ver mi perfil
+                    </MudNavLink>
+                    <MudNavLink Icon="@Icons.Material.Filled.PhotoCamera" OnClick="EditarPerfilAsync">
+                        Editar perfil y foto
+                    </MudNavLink>
+                </Authorized>
+                <NotAuthorized Context="_nocli">
+                    <MudNavLink Href="/destinos" Icon="@Icons.Material.Filled.Landscape" OnClick="@CloseDrawer">
+                        Destinos
+                    </MudNavLink>
+                </NotAuthorized>
+            </AuthorizeView>
 
             <MudNavLink Href="#nosotros" Icon="@Icons.Material.Filled.Groups" OnClick="@CloseDrawer">
                 Sobre Nosotros
@@ -288,15 +348,74 @@
 
 @code {
     private bool _drawerOpen = false;
+    private bool _menuAbierto;
+
+    // El menú de usuario usa un popover propio: el MudMenu con ActivatorContent no abre con clic en esta versión de MudBlazor.
+    private void AlternarMenu() => _menuAbierto = !_menuAbierto;
+
+    private void CerrarMenu() => _menuAbierto = false;
+
+    private void AlPulsarTecla(KeyboardEventArgs e)
+    {
+        if (e.Key is "Enter" or " ") _menuAbierto = !_menuAbierto;
+        else if (e.Key == "Escape") _menuAbierto = false;
+    }
+
+    protected override void OnInitialized() => Sesion.FotoCambiada += AlCambiarFoto;
+
+    private void AlCambiarFoto() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Sesion.FotoCambiada -= AlCambiarFoto;
     private string _newsletterEmail = "";
 
     private string Iniciales =>
         string.Concat(Sesion.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries)
             .Take(2).Select(p => char.ToUpper(p[0])));
 
+    // Abre el mismo diálogo del perfil del cliente (datos + foto) desde cualquier página.
+    private async Task EditarPerfilAsync()
+    {
+        _drawerOpen = false;
+        _menuAbierto = false;
+
+        try
+        {
+            var cliente = await ClienteService.ObtenerMiPerfilAsync();
+            if (cliente is null) return;
+
+            var foto = !string.IsNullOrWhiteSpace(cliente.Foto) ? cliente.Foto
+                : FotosLocal.Obtener(cliente.IdPersona) ?? Sesion.Foto;
+
+            var parametros = new DialogParameters<ExploreWayApp.Components.Pages.Cliente.ClientePerfilDialogo>
+            {
+                { x => x.Cliente, cliente },
+                { x => x.FotoActual, foto }
+            };
+            var opciones = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+
+            var dialogo = await Dialogos.ShowAsync<ExploreWayApp.Components.Pages.Cliente.ClientePerfilDialogo>(null, parametros, opciones);
+            var resultado = await dialogo.Result;
+            if (resultado is not null && !resultado.Canceled)
+            {
+                Snackbar.Add("Perfil actualizado.", Severity.Success);
+                // Si está en su perfil, se recarga para mostrar los datos nuevos.
+                if (NavManager.Uri.Contains("/cliente/perfil")) NavManager.Refresh();
+            }
+        }
+        catch (ExploreWayApp.Excepciones.ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("No se pudo conectar con el servidor.", Severity.Error);
+        }
+    }
+
     private void CerrarSesion()
     {
         _drawerOpen = false;
+        _menuAbierto = false;
         AuthService.CerrarSesion();
         Snackbar.Add("Sesión cerrada.", Severity.Info);
     }

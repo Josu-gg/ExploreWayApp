@@ -1,0 +1,216 @@
+@page "/cliente/reservas"
+
+@using System.Globalization
+@using ExploreWayApp.Components.Compartidos
+@using ExploreWayApp.DTOs.reserva
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Cliente
+@using ExploreWayApp.Servicios.Reserva
+
+@inject IReservaService ReservaService
+@inject IClienteService ClienteService
+@inject IDialogService Dialogos
+@inject ISnackbar Snackbar
+
+<PageTitle>Mis reservas — ExploreWay</PageTitle>
+
+<SoloCliente>
+    <div class="ew-cliente-page">
+        <MudContainer MaxWidth="MaxWidth.Large" Class="px-4 px-md-8">
+            <header class="ew-admin-head">
+                <div>
+                    <span class="ew-admin-kicker">Historial · @_reservas.Count @(_reservas.Count == 1 ? "reserva" : "reservas")</span>
+                    <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Mis reservas</MudText>
+                    <MudText Typo="Typo.body1" Class="exploreway-section-lead">
+                        Todas tus reservas: pendientes, confirmadas, completadas y canceladas.
+                    </MudText>
+                </div>
+                <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add"
+                           Class="rounded-pill px-6 py-2 text-none exploreway-btn-auth" Href="/cliente/destinos">
+                    Nueva reserva
+                </MudButton>
+            </header>
+
+            @if (error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;" ContentAlignment="HorizontalAlignment.Start">
+                    <div class="d-flex align-center justify-space-between flex-wrap gap-3">
+                        <span>@error</span>
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error" Class="text-none" OnClick="CargarAsync">Reintentar</MudButton>
+                    </div>
+                </MudAlert>
+            }
+
+            <MudChipSet T="string" @bind-SelectedValue="_filtro" SelectionMode="SelectionMode.SingleSelection" CheckMark="false" Class="mb-4">
+                <MudChip T="string" Value="@("")" Default="true" Variant="Variant.Outlined" Color="Color.Primary">Todas (@_reservas.Count)</MudChip>
+                @foreach (var f in _filtros)
+                {
+                    <MudChip T="string" Value="@f.Estado" Variant="Variant.Outlined" Color="Color.Primary">@f.Etiqueta (@Contar(f.Estado))</MudChip>
+                }
+            </MudChipSet>
+
+            @if (cargando)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            }
+            else if (!Filtradas.Any() && error is null)
+            {
+                <div class="ew-cliente-vacio">
+                    <MudIcon Icon="@Icons.Material.Outlined.EventBusy" Size="Size.Large" Style="color: var(--ew-teal);" />
+                    <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">
+                        @(_reservas.Count == 0 ? "Todavía no tenés reservas" : "Sin reservas en este estado")
+                    </MudText>
+                    <MudText Typo="Typo.body2" Class="mb-4" Style="color: #64748b;">
+                        @(_reservas.Count == 0 ? "Explorá los destinos y reservá tu primera expedición." : "Probá con otro filtro.")
+                    </MudText>
+                    @if (_reservas.Count == 0)
+                    {
+                        <MudButton Variant="Variant.Filled" Href="/cliente/destinos" Class="rounded-pill px-6 text-none exploreway-btn-auth">Ver destinos</MudButton>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="ew-res-lista">
+                    @foreach (var r in Filtradas)
+                    {
+                        <article class="ew-res-card">
+                            <div class="ew-res-fecha">
+                                <b>@r.FechaRecorrido.Day.ToString("00")</b>
+                                <span>@r.FechaRecorrido.ToString("MMM yyyy", Es)</span>
+                            </div>
+                            <div style="min-width: 0;">
+                                <div class="ew-res-titulo">@r.NombreDestino · @r.NombreActividad</div>
+                                <div class="ew-res-detalle">
+                                    <span>@r.HoraInicio.ToString("HH:mm") – @r.HoraFin.ToString("HH:mm")</span>
+                                    <span>Guía: @($"{r.NombreGuia} {r.ApellidoGuia}".Trim())</span>
+                                    <span>@r.CantidadPersonas @(r.CantidadPersonas == 1 ? "persona" : "personas")</span>
+                                    <span>Reserva #@r.IdReserva · @r.FechaReserva.ToString("dd/MM/yyyy")</span>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(r.Observaciones))
+                                {
+                                    <MudText Typo="Typo.caption" Style="color: #64748b;">“@r.Observaciones”</MudText>
+                                }
+                            </div>
+                            <div class="ew-res-lado">
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@ColorEstado(r.NombreEstado)" Class="ma-0">
+                                    @Etiqueta(r.NombreEstado)
+                                </MudChip>
+                                <span class="ew-precio">@r.PrecioTotal.ToString("C2", CultureInfo.GetCultureInfo("en-US"))</span>
+                                @if (PuedeCancelar(r))
+                                {
+                                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error" Class="text-none rounded-pill"
+                                               OnClick="() => CancelarAsync(r)">
+                                        Cancelar
+                                    </MudButton>
+                                }
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        </MudContainer>
+    </div>
+</SoloCliente>
+
+@code {
+    private static readonly CultureInfo Es = CultureInfo.GetCultureInfo("es");
+
+    // El estado "Aceptada" de la API se muestra como "Confirmada" para el cliente.
+    private static readonly (string Estado, string Etiqueta)[] _filtros =
+    [
+        ("Pendiente", "Pendientes"),
+        ("Aceptada", "Confirmadas"),
+        ("Completada", "Completadas"),
+        ("Cancelada", "Canceladas")
+    ];
+
+    private List<ReservaSalida> _reservas = [];
+    private string _filtro = string.Empty;
+    private bool cargando = true;
+    private string? error;
+
+    private IEnumerable<ReservaSalida> Filtradas => _reservas.Where(r =>
+        string.IsNullOrEmpty(_filtro) || EsEstado(r, _filtro));
+
+    private int Contar(string estado) => _reservas.Count(r => EsEstado(r, estado));
+
+    private static bool EsEstado(ReservaSalida r, string estado) =>
+        string.Equals(r.NombreEstado?.Trim(), estado, StringComparison.OrdinalIgnoreCase);
+
+    private static string Etiqueta(string? estado) => estado?.Trim().ToLowerInvariant() switch
+    {
+        "aceptada" => "Confirmada",
+        null or "" => "Sin estado",
+        _ => estado!.Trim()
+    };
+
+    private static Color ColorEstado(string? estado) => estado?.Trim().ToLowerInvariant() switch
+    {
+        "pendiente" => Color.Warning,
+        "aceptada" => Color.Info,
+        "completada" => Color.Success,
+        "cancelada" => Color.Error,
+        _ => Color.Default
+    };
+
+    // La API rechaza cancelar si el recorrido ya comenzó o la reserva está cerrada; se oculta el botón en esos casos.
+    private static bool PuedeCancelar(ReservaSalida r) =>
+        (EsEstado(r, "Pendiente") || EsEstado(r, "Aceptada")) &&
+        r.FechaRecorrido.ToDateTime(r.HoraInicio) > DateTime.Now;
+
+    protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+
+        try
+        {
+            var cliente = await ClienteService.ObtenerMiPerfilAsync()
+                          ?? throw new ApiException(404, "No se encontró tu perfil de cliente.");
+
+            _reservas = (await ReservaService.ListarPorClienteAsync(cliente.IdCliente))
+                .OrderByDescending(r => r.FechaRecorrido)
+                .ThenByDescending(r => r.HoraInicio)
+                .ToList();
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task CancelarAsync(ReservaSalida reserva)
+    {
+        var confirmar = await Dialogos.ShowMessageBoxAsync(
+            "Cancelar reserva",
+            $"¿Seguro que querés cancelar tu reserva de {reserva.NombreActividad} en {reserva.NombreDestino}? Esta acción no se puede deshacer.",
+            yesText: "Cancelar reserva", cancelText: "Volver");
+        if (confirmar != true) return;
+
+        try
+        {
+            await ReservaService.CancelarAsync(reserva.IdReserva);
+            Snackbar.Add("Reserva cancelada.", Severity.Success);
+            await CargarAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("No se pudo conectar con el servidor.", Severity.Error);
+        }
+    }
+}

@@ -1,0 +1,146 @@
+@page "/cliente/perfil"
+
+@using ExploreWayApp.Auth
+@using ExploreWayApp.Components.Compartidos
+@using ExploreWayApp.DTOs.Cliente
+@using ExploreWayApp.Excepciones
+@using ExploreWayApp.Servicios.Cliente
+
+@inject IClienteService ClienteService
+@inject SesionUsuario Sesion
+@inject IDialogService Dialogos
+@inject ISnackbar Snackbar
+@inject ExploreWayApp.Servicios.Imagenes.FotoPerfilLocal FotosLocal
+
+<PageTitle>Mi perfil — ExploreWay</PageTitle>
+
+<SoloCliente>
+    <div class="ew-cliente-page">
+        <MudContainer MaxWidth="MaxWidth.Medium" Class="px-4 px-md-8">
+            <header class="ew-admin-head">
+                <div>
+                    <span class="ew-admin-kicker">Cuenta</span>
+                    <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Mi perfil</MudText>
+                </div>
+                <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Edit"
+                           Class="rounded-pill px-6 py-2 text-none exploreway-btn-auth"
+                           Disabled="_cliente is null" OnClick="EditarAsync">
+                    Editar perfil
+                </MudButton>
+            </header>
+
+            @if (error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;" ContentAlignment="HorizontalAlignment.Start">
+                    <div class="d-flex align-center justify-space-between flex-wrap gap-3">
+                        <span>@error</span>
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error" Class="text-none" OnClick="CargarAsync">Reintentar</MudButton>
+                    </div>
+                </MudAlert>
+            }
+
+            <div class="ew-panel">
+                <div class="d-flex align-center gap-4 pa-6">
+                    <MudAvatar Color="Color.Primary" Style="width: 72px; height: 72px; font-size: 1.6rem;">@if (!string.IsNullOrWhiteSpace(FotoUrl)){<img src="@FotoUrl" alt="@Sesion.NombreCompleto" style="width:100%;height:100%;object-fit:cover;" />}else{@Iniciales}</MudAvatar>
+                    <div>
+                        <MudText Typo="Typo.h5" Class="font-weight-bold">@Sesion.NombreCompleto</MudText>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Primary" Class="ma-0 mt-1">
+                            @Sesion.NombreRol
+                        </MudChip>
+                    </div>
+                </div>
+                <MudDivider />
+
+                @if (cargando)
+                {
+                    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                }
+                else
+                {
+                    <dl class="ew-datos">
+                        <dt>Correo electrónico</dt>
+                        <dd>@Sesion.Correo</dd>
+
+                        @if (_cliente is not null)
+                        {
+                            <dt>Teléfono</dt>
+                            <dd>@Texto(_cliente.Telefono)</dd>
+                            <dt>Dirección</dt>
+                            <dd>@Texto(_cliente.Direccion)</dd>
+                            <dt>Fecha de nacimiento</dt>
+                            <dd>@(_cliente.FechaNacimiento?.ToString("dd/MM/yyyy") ?? "Sin completar")</dd>
+                        }
+                    </dl>
+                }
+            </div>
+
+            <div class="d-flex flex-wrap gap-3 mt-6">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.History"
+                           Class="rounded-pill text-none" Href="/cliente/reservas">
+                    Ver mis reservas
+                </MudButton>
+            </div>
+        </MudContainer>
+    </div>
+</SoloCliente>
+
+@code {
+    private ClienteSalida? _cliente;
+    private bool cargando = true;
+    private string? error;
+
+    // Prioridad: la que devuelve la API, luego la última subida recordada por el servidor, luego la de la sesión.
+    private string? FotoUrl =>
+        !string.IsNullOrWhiteSpace(_cliente?.Foto) ? _cliente!.Foto
+        : FotosLocal.Obtener(_cliente?.IdPersona ?? Sesion.IdPersona) ?? Sesion.Foto;
+
+    private string Iniciales =>
+        string.Concat(Sesion.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2).Select(p => char.ToUpper(p[0])));
+
+    private static string Texto(string? valor) => string.IsNullOrWhiteSpace(valor) ? "Sin completar" : valor;
+
+    protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+
+        try
+        {
+            _cliente = await ClienteService.ObtenerMiPerfilAsync();
+        }
+        catch (ApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task EditarAsync()
+    {
+        if (_cliente is null) return;
+
+        var parametros = new DialogParameters<ClientePerfilDialogo>
+        {
+            { x => x.Cliente, _cliente },
+            { x => x.FotoActual, FotoUrl }
+        };
+        var opciones = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+
+        var dialogo = await Dialogos.ShowAsync<ClientePerfilDialogo>(null, parametros, opciones);
+        var resultado = await dialogo.Result;
+        if (resultado is null || resultado.Canceled) return;
+
+        Snackbar.Add("Perfil actualizado.", Severity.Success);
+        await CargarAsync();
+    }
+}
