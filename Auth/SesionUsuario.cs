@@ -1,4 +1,4 @@
-﻿namespace ExploreWayApp.Auth
+namespace ExploreWayApp.Auth
 {
     public class SesionUsuario
     {
@@ -8,6 +8,7 @@
         public string NombreRol { get; private set; } = string.Empty;
         public string NombreCompleto { get; private set; } = string.Empty;
 
+        public int IdPersona { get; private set; }
         public int IdGuia { get; private set; }
         public string? Foto { get; private set; }
 
@@ -30,6 +31,7 @@
         public void CompletarPerfil(DTOs.Auth.UsuarioActualSalida usuario)
         {
             IdUsuario = usuario.IdUsuario;
+            IdPersona = usuario.IdPersona;
             Correo = usuario.Correo;
             NombreRol = usuario.NombreRol;
             NombreCompleto = $"{usuario.Nombre} {usuario.Apellido}".Trim();
@@ -49,6 +51,7 @@
             Token = null;
             IdUsuario = 0;
             IdGuia = 0;
+            IdPersona = 0;
             Foto = null;
             Correo = string.Empty;
             NombreRol = string.Empty;

@@ -1,4 +1,4 @@
-﻿using ExploreWayApp.Auth;
+using ExploreWayApp.Auth;
 using ExploreWayApp.DTOs.Auth;
 using ExploreWayApp.DTOs.guia;
 using ExploreWayApp.Excepciones;
@@ -10,6 +10,7 @@ namespace ExploreWayApp.Servicios;
 public sealed class AuthService(
     HttpClient cliente,
     SesionUsuario sesion,
+    ExploreWayApp.Servicios.Imagenes.FotoPerfilLocal fotosLocal,
     ExploreWayAuthStateProvider proveedor) : IAuthService
 {
     public async Task IniciarSesionAsync(LoginGuardar credenciales)
@@ -34,6 +35,10 @@ public sealed class AuthService(
                       ?? throw new ApiException(500, "No se pudieron obtener los datos del usuario autenticado.");
 
         sesion.CompletarPerfil(usuario);
+
+        // Si la API no devuelve la foto, se usa la que este servidor recuerda de la última subida.
+        if (string.IsNullOrWhiteSpace(usuario.Foto))
+            sesion.ActualizarFoto(fotosLocal.Obtener(usuario.IdPersona));
 
         // El token no trae el Id del guía: se resuelve una vez a partir de su persona.
         if (sesion.EsGuia)

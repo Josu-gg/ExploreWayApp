@@ -11,6 +11,7 @@
 @inject SesionUsuario Sesion
 @inject IDialogService Dialogos
 @inject ISnackbar Snackbar
+@inject ExploreWayApp.Servicios.Imagenes.FotoPerfilLocal FotosLocal
 
 <PageTitle>Mi perfil — ExploreWay</PageTitle>
 
@@ -46,7 +47,7 @@
 
         <div class="ew-panel">
             <div class="d-flex align-center gap-4 pa-6">
-                <MudAvatar Color="Color.Primary" Style="width: 72px; height: 72px; font-size: 1.6rem;" Image="@(_guia?.Foto ?? Sesion.Foto)">@Iniciales</MudAvatar>
+                <MudAvatar Color="Color.Primary" Style="width: 72px; height: 72px; font-size: 1.6rem;" >@if (!string.IsNullOrWhiteSpace(FotoUrl)){<img src="@FotoUrl" alt="@Sesion.NombreCompleto" style="width:100%;height:100%;object-fit:cover;" />}else{@Iniciales}</MudAvatar>
                 <div>
                     <MudText Typo="Typo.h5" Class="font-weight-bold">@Sesion.NombreCompleto</MudText>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Primary" Class="ma-0 mt-1">
@@ -91,6 +92,11 @@
     private GuiaSalida? _guia;
     private bool cargando;
     private string? error;
+
+    // Prioridad: la que devuelve la API, luego la última subida recordada por el servidor, luego la de la sesión.
+    private string? FotoUrl =>
+        !string.IsNullOrWhiteSpace(_guia?.Foto) ? _guia!.Foto
+        : FotosLocal.Obtener(_guia?.IdPersona ?? Sesion.IdPersona) ?? Sesion.Foto;
 
     private string Iniciales =>
         string.Concat(Sesion.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries)

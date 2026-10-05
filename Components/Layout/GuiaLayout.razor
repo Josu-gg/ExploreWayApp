@@ -35,7 +35,7 @@
                 <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true">
                     <ActivatorContent Context="_act">
                         <div class="d-flex align-center gap-2" style="cursor: pointer;">
-                            <MudAvatar Color="Color.Primary" Size="Size.Medium" Image="@Sesion.Foto">@Iniciales</MudAvatar>
+                            <MudAvatar Color="Color.Primary" Size="Size.Medium">@if (!string.IsNullOrWhiteSpace(Sesion.Foto)){<img src="@Sesion.Foto" alt="@Sesion.NombreCompleto" style="width:100%;height:100%;object-fit:cover;" />}else{@Iniciales}</MudAvatar>
                             <div class="d-none d-sm-flex flex-column" style="line-height: 1.2;">
                                 <MudText Typo="Typo.body2" Class="font-weight-bold">@Sesion.NombreCompleto</MudText>
                                 <MudText Typo="Typo.caption">@Sesion.NombreRol</MudText>

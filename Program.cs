@@ -1,4 +1,4 @@
-﻿using ExploreWayApp.Components;
+using ExploreWayApp.Components;
 using ExploreWayApp.Auth;
 using ExploreWayApp.Config;
 using ExploreWayApp.Servicios;
@@ -30,6 +30,7 @@ builder.Services.AddMudServices();
 builder.Services.Configure<ApiOptions>(builder.Configuration.GetSection("ExploreWayApi"));
 builder.Services.Configure<CloudinaryOptions>(builder.Configuration.GetSection("Cloudinary"));
 
+builder.Services.AddSingleton<ExploreWayApp.Servicios.Imagenes.FotoPerfilLocal>();
 builder.Services.AddScoped<SesionUsuario>();
 builder.Services.AddScoped<ExploreWayAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp =>

@@ -9,6 +9,7 @@
 @inject IGuiaService GuiaService
 @inject ICloudinaryService CloudinaryService
 @inject SesionUsuario Sesion
+@inject FotoPerfilLocal FotosLocal
 
 <MudDialog Class="exploreway-destino-dialogo">
     <TitleContent>
@@ -30,7 +31,7 @@
             <MudGrid Spacing="2">
                 <MudItem xs="12">
                     <MudText Typo="Typo.body2" Class="mb-2" Style="color: #64748b;">Foto de perfil</MudText>
-                    <SelectorFoto UrlActual="@Guia.Foto" PermitirQuitar="true"
+                    <SelectorFoto UrlActual="@(string.IsNullOrWhiteSpace(Guia.Foto) ? (FotosLocal.Obtener(Guia.IdPersona) ?? Sesion.Foto) : Guia.Foto)" PermitirQuitar="true"
                                   @bind-Archivo="_foto" @bind-Quitar="_quitarFoto" Deshabilitado="guardando" />
                 </MudItem>
                 <MudItem xs="12">
@@ -141,7 +142,13 @@
             }
 
             var actualizado = await GuiaService.ModificarMiPerfilAsync(modelo);
-            if (modelo.Foto is not null) Sesion.ActualizarFoto(actualizado?.Foto);
+            // La URL de Cloudinary es la fuente de verdad en pantalla: si la API no la devuelve, se usa la subida.
+            if (modelo.Foto is not null)
+            {
+                var urlFinal = string.IsNullOrWhiteSpace(actualizado?.Foto) ? modelo.Foto : actualizado!.Foto;
+                FotosLocal.Guardar(Guia.IdPersona, urlFinal);
+                Sesion.ActualizarFoto(urlFinal);
+            }
             MudDialog.Close(DialogResult.Ok(true));
         }
         catch (ApiException ex)

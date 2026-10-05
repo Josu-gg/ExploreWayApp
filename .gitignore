@@ -57,3 +57,6 @@ coverage/
 
 # Archivos generados por herramientas
 Generated/
+
+# Fotos de perfil recordadas por el servidor
+App_Data/

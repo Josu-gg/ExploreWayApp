@@ -7,6 +7,7 @@
 
 @inject IGuiaService GuiaService
 @inject ICloudinaryService CloudinaryService
+@inject FotoPerfilLocal FotosLocal
 
 <MudDialog Class="exploreway-guia-dialogo">
     <TitleContent>
@@ -233,7 +234,10 @@
                 registro.Estudios = Limpiar(registro.Estudios);
                 registro.FechaNacimiento = _fechaNacimiento is { } f ? DateOnly.FromDateTime(f) : null;
 
-                await GuiaService.RegistrarAsync(registro);
+                var creado = await GuiaService.RegistrarAsync(registro);
+                // Si la API no devuelve la foto, el servidor recuerda la URL subida a Cloudinary.
+                if (creado is not null && !string.IsNullOrWhiteSpace(registro.Foto))
+                    FotosLocal.Guardar(creado.IdPersona, registro.Foto);
             }
             else
             {
