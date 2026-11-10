@@ -80,7 +80,7 @@
 
     private async Task AlSeleccionar(IReadOnlyList<IBrowserFile> archivos)
     {
-        var elegido = archivos.FirstOrDefault();
+        var elegido = archivos?.FirstOrDefault();
         _aviso = null;
 
         if (elegido is null) return;
