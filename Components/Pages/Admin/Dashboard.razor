@@ -1,6 +1,7 @@
 @page "/admin"
 @layout AdminLayout
 
+@using System.Globalization
 @using ExploreWayApp.Auth
 @using ExploreWayApp.DTOs.Destino
 @using ExploreWayApp.Excepciones
@@ -11,19 +12,17 @@
 
 <PageTitle>Panel general — ExploreWay</PageTitle>
 
-<div class="ew-admin-page">
+<div class="ew-admin-page ew-dash">
     <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
 
-        <header class="ew-admin-head">
-            <div>
-                <span class="ew-admin-kicker">Resumen</span>
-                <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">
-                    Hola, @PrimerNombre
-                </MudText>
-                <MudText Typo="Typo.body1" Class="exploreway-section-lead">
-                    Este es el estado actual de ExploreWay.
-                </MudText>
-            </div>
+        <header class="ew-dash-head">
+            <span class="ew-dash-kicker">Resumen</span>
+            <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">
+                Hola, @PrimerNombre
+            </MudText>
+            <MudText Typo="Typo.body1" Class="exploreway-section-lead">
+                Este es el estado actual de ExploreWay.
+            </MudText>
         </header>
 
         @if (_error is not null)
@@ -34,39 +33,126 @@
         @* INDICADORES *@
         <MudGrid Spacing="3" Class="mb-6">
             <MudItem xs="12" sm="6" md="3">
-                <div class="ew-stat">
-                    <span class="ew-stat-icon" style="background: rgba(0,168,107,.12); color: var(--ew-primary);">
-                        <MudIcon Icon="@Icons.Material.Filled.Landscape" />
+                <div class="ew-dash-stat ew-dash-stat--verde">
+                    <span class="ew-dash-stat-icon">
+                        <MudIcon Icon="@Icons.Material.Rounded.Landscape" />
                     </span>
-                    <span class="ew-stat-label">Destinos</span>
-                    <span class="ew-stat-value">@(_cargando ? "…" : _destinos.Count.ToString())</span>
+                    <span class="ew-dash-stat-label">Destinos</span>
+                    <span class="ew-dash-stat-value">@(_cargando ? "…" : _destinos.Count.ToString())</span>
                 </div>
             </MudItem>
             <MudItem xs="12" sm="6" md="3">
-                <div class="ew-stat">
-                    <span class="ew-stat-icon" style="background: rgba(91,186,227,.16); color: #2b8db8;">
-                        <MudIcon Icon="@Icons.Material.Filled.Map" />
+                <div class="ew-dash-stat ew-dash-stat--cielo">
+                    <span class="ew-dash-stat-icon">
+                        <MudIcon Icon="@Icons.Material.Rounded.Map" />
                     </span>
-                    <span class="ew-stat-label">Departamentos</span>
-                    <span class="ew-stat-value">@(_cargando ? "…" : _destinos.Select(d => d.Departamento).Distinct().Count().ToString())</span>
+                    <span class="ew-dash-stat-label">Departamentos</span>
+                    <span class="ew-dash-stat-value">@(_cargando ? "…" : _destinos.Select(d => d.Departamento).Distinct().Count().ToString())</span>
                 </div>
             </MudItem>
             <MudItem xs="12" sm="6" md="3">
-                <div class="ew-stat">
-                    <span class="ew-stat-icon" style="background: rgba(91,227,194,.2); color: var(--ew-green-ink);">
-                        <MudIcon Icon="@Icons.Material.Filled.Flag" />
+                <div class="ew-dash-stat ew-dash-stat--turquesa">
+                    <span class="ew-dash-stat-icon">
+                        <MudIcon Icon="@Icons.Material.Rounded.Flag" />
                     </span>
-                    <span class="ew-stat-label">Estados en uso</span>
-                    <span class="ew-stat-value">@(_cargando ? "…" : _destinos.Select(d => d.IdEstado).Distinct().Count().ToString())</span>
+                    <span class="ew-dash-stat-label">Estados en uso</span>
+                    <span class="ew-dash-stat-value">@(_cargando ? "…" : _destinos.Select(d => d.IdEstado).Distinct().Count().ToString())</span>
                 </div>
             </MudItem>
             <MudItem xs="12" sm="6" md="3">
-                <div class="ew-stat">
-                    <span class="ew-stat-icon" style="background: rgba(103,190,203,.2); color: #3a8f9c;">
-                        <MudIcon Icon="@Icons.Material.Filled.Badge" />
+                <div class="ew-dash-stat ew-dash-stat--menta">
+                    <span class="ew-dash-stat-icon">
+                        <MudIcon Icon="@Icons.Material.Rounded.Badge" />
                     </span>
-                    <span class="ew-stat-label">Tu rol</span>
-                    <span class="ew-stat-value ew-stat-value--text">@Sesion.NombreRol</span>
+                    <span class="ew-dash-stat-label">Tu rol</span>
+                    <span class="ew-dash-stat-value ew-dash-stat-value--text">@Sesion.NombreRol</span>
+                </div>
+            </MudItem>
+        </MudGrid>
+
+        @* GRÁFICAS (calculadas con los destinos ya cargados) *@
+        <MudGrid Spacing="3" Class="mb-6">
+            <MudItem xs="12" md="8">
+                <div class="ew-dash-panel">
+                    <div class="ew-dash-panel-head">
+                        <div>
+                            <h3>Destinos por departamento</h3>
+                            <p>Departamentos con más destinos registrados</p>
+                        </div>
+                        <span class="ew-dash-panel-icon"><MudIcon Icon="@Icons.Material.Rounded.BarChart" Size="Size.Small" /></span>
+                    </div>
+
+                    @if (_cargando)
+                    {
+                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                    }
+                    else if (_destinos.Count == 0)
+                    {
+                        <div class="ew-dash-vacio">
+                            <MudIcon Icon="@Icons.Material.Outlined.BarChart" Size="Size.Large" />
+                            <MudText Typo="Typo.body2">Todavía no hay destinos para graficar.</MudText>
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="ew-dash-barras">
+                            @foreach (var s in PorDepartamento)
+                            {
+                                <li>
+                                    <span class="ew-dash-barra-nombre" title="@s.Etiqueta">@s.Etiqueta</span>
+                                    <span class="ew-dash-barra-pista">
+                                        <span class="ew-dash-barra-relleno" style="width: @Ancho(s.Cantidad, MaxDepartamento)%; background: @s.Color;"></span>
+                                    </span>
+                                    <span class="ew-dash-barra-valor">@s.Cantidad</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <div class="ew-dash-panel">
+                    <div class="ew-dash-panel-head">
+                        <div>
+                            <h3>Destinos por estado</h3>
+                            <p>Distribución según su estado</p>
+                        </div>
+                        <span class="ew-dash-panel-icon"><MudIcon Icon="@Icons.Material.Rounded.DonutLarge" Size="Size.Small" /></span>
+                    </div>
+
+                    @if (_cargando)
+                    {
+                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                    }
+                    else if (_destinos.Count == 0)
+                    {
+                        <div class="ew-dash-vacio">
+                            <MudIcon Icon="@Icons.Material.Outlined.DonutLarge" Size="Size.Large" />
+                            <MudText Typo="Typo.body2">Todavía no hay destinos para graficar.</MudText>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ew-dash-donut-wrap">
+                            <div class="ew-dash-donut" style="background: @GradienteDonut;">
+                                <div class="ew-dash-donut-centro">
+                                    <strong>@_destinos.Count</strong>
+                                    <span>Destinos</span>
+                                </div>
+                            </div>
+                        </div>
+                        <ul class="ew-dash-leyenda">
+                            @foreach (var s in PorEstado)
+                            {
+                                <li>
+                                    <span class="ew-dash-punto" style="background: @s.Color;"></span>
+                                    <span class="ew-dash-leyenda-nombre">@s.Etiqueta</span>
+                                    <span class="ew-dash-leyenda-valor">@s.Cantidad · @s.Porcentaje.ToString("0", CultureInfo.InvariantCulture)%</span>
+                                </li>
+                            }
+                        </ul>
+                    }
                 </div>
             </MudItem>
         </MudGrid>
@@ -74,11 +160,13 @@
         <MudGrid Spacing="3">
             @* ÚLTIMOS DESTINOS *@
             <MudItem xs="12" md="8">
-                <div class="ew-panel">
-                    <div class="ew-panel-head">
-                        <MudText Typo="Typo.h6" Class="font-weight-bold">Destinos recientes</MudText>
-                        <MudButton Href="/admin/destinos" Size="Size.Small" Color="Color.Primary" Class="text-none"
-                                   EndIcon="@Icons.Material.Filled.ArrowForward">
+                <div class="ew-dash-panel">
+                    <div class="ew-dash-panel-head">
+                        <div>
+                            <h3>Destinos recientes</h3>
+                        </div>
+                        <MudButton Href="/admin/destinos" Size="Size.Small" Color="Color.Primary" Class="text-none ew-dash-vertodos"
+                                   EndIcon="@Icons.Material.Rounded.ArrowForward">
                             Ver todos
                         </MudButton>
                     </div>
@@ -89,25 +177,27 @@
                     }
                     else if (_destinos.Count == 0)
                     {
-                        <div class="ew-panel-vacio">
-                            <MudIcon Icon="@Icons.Material.Outlined.TravelExplore" Size="Size.Large" Style="color: var(--ew-teal);" />
-                            <MudText Typo="Typo.body2" Style="color: #64748b;">Todavía no hay destinos registrados.</MudText>
+                        <div class="ew-dash-vacio">
+                            <MudIcon Icon="@Icons.Material.Outlined.TravelExplore" Size="Size.Large" />
+                            <MudText Typo="Typo.body2">Todavía no hay destinos registrados.</MudText>
                         </div>
                     }
                     else
                     {
-                        <ul class="ew-lista">
+                        <ul class="ew-dash-lista">
                             @foreach (var d in Recientes)
                             {
                                 <li>
-                                    <MudIcon Icon="@Icons.Material.Outlined.Place" Size="Size.Small" Style="color: var(--ew-primary);" />
-                                    <div class="ew-lista-texto">
+                                    <span class="ew-dash-lista-icono">
+                                        <MudIcon Icon="@Icons.Material.Rounded.Place" Size="Size.Small" />
+                                    </span>
+                                    <div class="ew-dash-lista-texto">
                                         <strong>@d.Nombre</strong>
                                         <span>@(string.IsNullOrWhiteSpace(d.Municipio) ? d.Departamento : $"{d.Municipio}, {d.Departamento}")</span>
                                     </div>
-                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Info" Class="ma-0">
+                                    <span class="ew-dash-estado">
                                         @(d.NombreEstado ?? $"Estado {d.IdEstado}")
-                                    </MudChip>
+                                    </span>
                                 </li>
                             }
                         </ul>
@@ -117,25 +207,27 @@
 
             @* ACCESOS RÁPIDOS *@
             <MudItem xs="12" md="4">
-                <div class="ew-panel">
-                    <div class="ew-panel-head">
-                        <MudText Typo="Typo.h6" Class="font-weight-bold">Accesos rápidos</MudText>
+                <div class="ew-dash-panel">
+                    <div class="ew-dash-panel-head">
+                        <div>
+                            <h3>Accesos rápidos</h3>
+                        </div>
                     </div>
-                    <div class="ew-accesos">
-                        <a href="/admin/destinos" class="ew-acceso">
-                            <MudIcon Icon="@Icons.Material.Filled.Landscape" />
-                            <span>Gestionar destinos</span>
-                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+                    <div class="ew-dash-accesos">
+                        <a href="/admin/destinos" class="ew-dash-acceso ew-dash-acceso--verde">
+                            <span class="ew-dash-acceso-icono"><MudIcon Icon="@Icons.Material.Rounded.Landscape" /></span>
+                            <span class="ew-dash-acceso-texto">Gestionar destinos</span>
+                            <MudIcon Icon="@Icons.Material.Rounded.ArrowForward" Size="Size.Small" Class="ew-dash-acceso-flecha" />
                         </a>
-                        <a href="/admin/perfil" class="ew-acceso">
-                            <MudIcon Icon="@Icons.Material.Filled.Person" />
-                            <span>Mi perfil</span>
-                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+                        <a href="/admin/perfil" class="ew-dash-acceso ew-dash-acceso--cielo">
+                            <span class="ew-dash-acceso-icono"><MudIcon Icon="@Icons.Material.Rounded.Person" /></span>
+                            <span class="ew-dash-acceso-texto">Mi perfil</span>
+                            <MudIcon Icon="@Icons.Material.Rounded.ArrowForward" Size="Size.Small" Class="ew-dash-acceso-flecha" />
                         </a>
-                        <a href="/" class="ew-acceso">
-                            <MudIcon Icon="@Icons.Material.Filled.Public" />
-                            <span>Ver sitio público</span>
-                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+                        <a href="/" class="ew-dash-acceso ew-dash-acceso--turquesa">
+                            <span class="ew-dash-acceso-icono"><MudIcon Icon="@Icons.Material.Rounded.Public" /></span>
+                            <span class="ew-dash-acceso-texto">Ver sitio público</span>
+                            <MudIcon Icon="@Icons.Material.Rounded.ArrowForward" Size="Size.Small" Class="ew-dash-acceso-flecha" />
                         </a>
                     </div>
                 </div>
@@ -145,6 +237,12 @@
 </div>
 
 @code {
+    private record Segmento(string Etiqueta, int Cantidad, string Color, double Porcentaje);
+
+    // Verdes, azules y turquesas de la paleta ExploreWay
+    private static readonly string[] Paleta =
+        ["#10b981", "#0284c7", "#38bdf8", "#0d9488", "#5BE3C2", "#67BECB"];
+
     private List<DestinoSalidaDto> _destinos = [];
     private bool _cargando = true;
     private string? _error;
@@ -153,6 +251,45 @@
         Sesion.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "administrador";
 
     private IEnumerable<DestinoSalidaDto> Recientes => _destinos.OrderByDescending(d => d.IdDestino).Take(6);
+
+    // Datos de las gráficas: salen de la misma lista de destinos ya cargada, no hay llamadas nuevas.
+    private List<Segmento> PorDepartamento =>
+        _destinos
+            .GroupBy(d => string.IsNullOrWhiteSpace(d.Departamento) ? "Sin departamento" : d.Departamento)
+            .OrderByDescending(g => g.Count()).ThenBy(g => g.Key)
+            .Take(6)
+            .Select((g, i) => new Segmento(g.Key, g.Count(), Paleta[i % Paleta.Length], Pct(g.Count(), _destinos.Count)))
+            .ToList();
+
+    private int MaxDepartamento => PorDepartamento.Count == 0 ? 1 : PorDepartamento.Max(s => s.Cantidad);
+
+    private List<Segmento> PorEstado =>
+        _destinos
+            .GroupBy(d => d.NombreEstado ?? $"Estado {d.IdEstado}")
+            .OrderByDescending(g => g.Count()).ThenBy(g => g.Key)
+            .Select((g, i) => new Segmento(g.Key, g.Count(), Paleta[i % Paleta.Length], Pct(g.Count(), _destinos.Count)))
+            .ToList();
+
+    private string GradienteDonut
+    {
+        get
+        {
+            var tramos = new List<string>();
+            double acumulado = 0;
+            foreach (var s in PorEstado)
+            {
+                var fin = acumulado + s.Porcentaje;
+                tramos.Add($"{s.Color} {acumulado.ToString("0.##", CultureInfo.InvariantCulture)}% {fin.ToString("0.##", CultureInfo.InvariantCulture)}%");
+                acumulado = fin;
+            }
+            return tramos.Count == 0 ? "#cbd8e6" : $"conic-gradient({string.Join(", ", tramos)})";
+        }
+    }
+
+    private static double Pct(int valor, int total) => total <= 0 ? 0 : valor * 100.0 / total;
+
+    // Ancho en % para el CSS (siempre con punto decimal)
+    private static string Ancho(int valor, int total) => Pct(valor, total).ToString("0.##", CultureInfo.InvariantCulture);
 
     protected override async Task OnInitializedAsync()
     {

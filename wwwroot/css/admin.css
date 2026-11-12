@@ -1,0 +1,520 @@
+/* ============================================================
+   ADMIN — REDISEÑO DEL DASHBOARD (solo estilo)
+   Alcance: .ew-adm (AdminLayout) y .ew-dash (Admin/Dashboard).
+   No afecta a los layouts de Guía ni de Cliente.
+   Las variables --ew-* vienen de exploreway.css.
+   ============================================================ */
+.ew-adm {
+    --ew-adm-bg: #dce9f5;
+    --ew-adm-line: #bed6eb;
+    --ew-adm-card-a: #e3edf7;
+    --ew-adm-card-b: #d9e5f2;
+}
+
+.ew-adm .ew-admin-main {
+    background: var(--ew-adm-bg);
+}
+
+.ew-adm .ew-admin-appbar {
+    background-color: rgba(220, 233, 245, 0.88) !important;
+    border-bottom: 1px solid var(--ew-adm-line);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.ew-adm .ew-admin-drawer {
+    box-shadow: 4px 0 24px rgba(11, 19, 41, 0.12);
+}
+
+.ew-adm .ew-admin-logo {
+    border-radius: 12px;
+    box-shadow: inset 0 0 12px rgba(91, 227, 194, 0.12);
+}
+
+.ew-adm .ew-admin-nav .mud-nav-link {
+    border-radius: 10px;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+}
+
+    .ew-adm .ew-admin-nav .mud-nav-link.active:not(.mud-nav-link-disabled) {
+        background: rgba(16, 185, 129, 0.16);
+        box-shadow: inset 4px 0 0 #10b981;
+    }
+
+.ew-adm .ew-admin-nav-group {
+    color: #7b8aa3;
+    font-weight: 700;
+}
+
+/* ---------- Encabezado ---------- */
+.ew-dash {
+    padding-top: 1.75rem;
+}
+
+.ew-dash-head {
+    margin-bottom: 1.75rem;
+}
+
+.ew-dash-kicker {
+    display: inline-block;
+    margin-bottom: 0.6rem;
+    padding: 0.2rem 0.75rem;
+    font-family: var(--ew-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #065f46;
+    background: rgba(209, 250, 229, 0.9);
+    border: 1px solid rgba(110, 231, 183, 0.7);
+    border-radius: 999px;
+}
+
+/* ---------- Tarjetas de indicadores ---------- */
+.ew-dash-stat {
+    --acento: #10b981;
+    --acento-fondo: rgba(16, 185, 129, 0.15);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 1.25rem 1.25rem 1.35rem;
+    height: 100%;
+    background: linear-gradient(135deg, #dff1fd 0%, #e5f4fe 50%, #cfeafc 100%);
+    border: 1px solid rgba(125, 190, 235, 0.6);
+    border-radius: 18px;
+    box-shadow: 0 1px 2px rgba(11, 19, 41, 0.05);
+    transition: transform 0.25s var(--ew-ease), box-shadow 0.25s var(--ew-ease);
+}
+
+    .ew-dash-stat::after {
+        content: "";
+        position: absolute;
+        right: -28px;
+        top: -28px;
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background: var(--acento-fondo);
+        pointer-events: none;
+    }
+
+    .ew-dash-stat:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(11, 19, 41, 0.1);
+    }
+
+.ew-dash-stat--verde {
+    --acento: #059669;
+    --acento-fondo: rgba(16, 185, 129, 0.16);
+}
+
+.ew-dash-stat--cielo {
+    --acento: #0284c7;
+    --acento-fondo: rgba(56, 189, 248, 0.22);
+}
+
+.ew-dash-stat--turquesa {
+    --acento: #0d9488;
+    --acento-fondo: rgba(45, 212, 191, 0.2);
+}
+
+.ew-dash-stat--menta {
+    --acento: #00835a;
+    --acento-fondo: rgba(91, 227, 194, 0.28);
+}
+
+.ew-dash-stat-icon {
+    position: relative;
+    z-index: 1;
+    width: 46px;
+    height: 46px;
+    margin-bottom: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    color: var(--acento);
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 8px rgba(11, 19, 41, 0.07);
+}
+
+.ew-dash-stat-label {
+    position: relative;
+    z-index: 1;
+    font-family: var(--ew-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #475569;
+}
+
+.ew-dash-stat-value {
+    position: relative;
+    z-index: 1;
+    font-family: var(--ew-display);
+    font-size: 2.1rem;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--ew-ink);
+}
+
+.ew-dash-stat-value--text {
+    font-size: 1.5rem;
+    padding-top: 0.45rem;
+}
+
+/* ---------- Paneles ---------- */
+.ew-dash-panel {
+    height: 100%;
+    overflow: hidden;
+    background: linear-gradient(180deg, var(--ew-adm-card-a), var(--ew-adm-card-b));
+    border: 1px solid rgba(125, 190, 235, 0.5);
+    border-radius: 18px;
+    box-shadow: 0 1px 2px rgba(11, 19, 41, 0.04);
+}
+
+.ew-dash-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 1.4rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.45);
+}
+
+    .ew-dash-panel-head h3 {
+        margin: 0;
+        font-family: var(--ew-display);
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--ew-ink);
+    }
+
+    .ew-dash-panel-head p {
+        margin: 0.1rem 0 0;
+        font-size: 0.78rem;
+        color: #64748b;
+    }
+
+.ew-dash-panel-icon {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0284c7;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 10px;
+}
+
+.ew-dash-vertodos {
+    font-weight: 700 !important;
+    border-radius: 999px !important;
+    background: rgba(209, 250, 229, 0.9) !important;
+    color: #065f46 !important;
+    padding-inline: 0.9rem !important;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+    .ew-dash-vertodos:hover {
+        background: #10b981 !important;
+        color: #ffffff !important;
+    }
+
+.ew-dash-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 3rem 1rem;
+    color: #64748b;
+}
+
+    .ew-dash-vacio .mud-icon-root {
+        color: #0d9488;
+    }
+
+/* ---------- Gráfica de barras ---------- */
+.ew-dash-barras {
+    list-style: none;
+    margin: 0;
+    padding: 1.25rem 1.4rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+    .ew-dash-barras li {
+        display: grid;
+        grid-template-columns: minmax(90px, 160px) 1fr 2.2rem;
+        align-items: center;
+        gap: 0.9rem;
+    }
+
+.ew-dash-barra-nombre {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.ew-dash-barra-pista {
+    height: 14px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.65);
+    border-radius: 999px;
+    box-shadow: inset 0 1px 2px rgba(11, 19, 41, 0.08);
+}
+
+.ew-dash-barra-relleno {
+    display: block;
+    height: 100%;
+    min-width: 8px;
+    border-radius: 999px;
+    transition: width 0.8s var(--ew-ease);
+}
+
+.ew-dash-barra-valor {
+    text-align: right;
+    font-family: var(--ew-display);
+    font-weight: 800;
+    color: var(--ew-ink);
+}
+
+/* ---------- Gráfica de dona ---------- */
+.ew-dash-donut-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 1.4rem 1rem 0.6rem;
+}
+
+.ew-dash-donut {
+    position: relative;
+    width: 170px;
+    height: 170px;
+    border-radius: 50%;
+    box-shadow: 0 4px 14px rgba(11, 19, 41, 0.1);
+}
+
+.ew-dash-donut-centro {
+    position: absolute;
+    inset: 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #e3edf7;
+    border-radius: 50%;
+    box-shadow: inset 0 2px 6px rgba(11, 19, 41, 0.08);
+}
+
+    .ew-dash-donut-centro strong {
+        font-family: var(--ew-display);
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1;
+        color: var(--ew-ink);
+    }
+
+    .ew-dash-donut-centro span {
+        margin-top: 0.2rem;
+        font-family: var(--ew-mono);
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+
+.ew-dash-leyenda {
+    list-style: none;
+    margin: 0;
+    padding: 0.6rem 1.4rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+    .ew-dash-leyenda li {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.45rem 0.7rem;
+        background: rgba(255, 255, 255, 0.55);
+        border-radius: 10px;
+        font-size: 0.82rem;
+    }
+
+.ew-dash-punto {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    border-radius: 50%;
+}
+
+.ew-dash-leyenda-nombre {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.ew-dash-leyenda-valor {
+    font-weight: 700;
+    color: #475569;
+}
+
+/* ---------- Destinos recientes ---------- */
+.ew-dash-lista {
+    list-style: none;
+    margin: 0;
+    padding: 0.4rem 0.6rem 0.6rem;
+}
+
+    .ew-dash-lista li {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0.8rem 0.8rem;
+        border-radius: 12px;
+        transition: background-color 0.2s;
+    }
+
+        .ew-dash-lista li:hover {
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+.ew-dash-lista-icono {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #059669;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 11px;
+}
+
+.ew-dash-lista-texto {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+    .ew-dash-lista-texto strong {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 700;
+        color: var(--ew-ink);
+    }
+
+    .ew-dash-lista-texto span {
+        font-size: 0.82rem;
+        color: #64748b;
+    }
+
+.ew-dash-estado {
+    flex-shrink: 0;
+    padding: 0.2rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #075985;
+    background: rgba(186, 230, 253, 0.85);
+    border: 1px solid rgba(125, 211, 252, 0.8);
+    border-radius: 999px;
+}
+
+/* ---------- Accesos rápidos ---------- */
+.ew-dash-accesos {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    padding: 1rem;
+}
+
+.ew-dash-acceso {
+    --acento: #10b981;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 0.9rem;
+    color: var(--ew-ink);
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(11, 19, 41, 0.05);
+    transition: transform 0.2s var(--ew-ease), box-shadow 0.2s var(--ew-ease), border-color 0.2s;
+}
+
+    .ew-dash-acceso:hover {
+        transform: translateY(-1px);
+        border-color: var(--acento);
+        box-shadow: 0 8px 18px rgba(11, 19, 41, 0.1);
+    }
+
+.ew-dash-acceso--verde {
+    --acento: #10b981;
+}
+
+.ew-dash-acceso--cielo {
+    --acento: #0284c7;
+}
+
+.ew-dash-acceso--turquesa {
+    --acento: #0d9488;
+}
+
+.ew-dash-acceso-icono {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    background: var(--acento);
+    border-radius: 12px;
+    box-shadow: 0 3px 8px rgba(11, 19, 41, 0.15);
+    transition: transform 0.2s var(--ew-ease);
+}
+
+.ew-dash-acceso:hover .ew-dash-acceso-icono {
+    transform: scale(1.06);
+}
+
+.ew-dash-acceso-texto {
+    flex: 1;
+    font-weight: 700;
+}
+
+.ew-dash-acceso .ew-dash-acceso-flecha {
+    color: var(--acento);
+    transition: transform 0.2s var(--ew-ease);
+}
+
+.ew-dash-acceso:hover .ew-dash-acceso-flecha {
+    transform: translateX(3px);
+}
+
+@media (max-width: 599px) {
+    .ew-dash-barras li {
+        grid-template-columns: minmax(70px, 110px) 1fr 1.8rem;
+        gap: 0.6rem;
+    }
+}
