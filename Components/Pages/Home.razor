@@ -1,358 +1,284 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.Components.Authorization
+@implements IAsyncDisposable
 
-@inject ISnackbar Snackbar
-@inject NavigationManager NavManager
 @inject IJSRuntime JS
 
-<div class="exploreway-home">
+<PageTitle>ExploreWay | Expediciones del volcán al arrecife</PageTitle>
 
-    @* ============ HERO — DESPACHO DE EXPEDICIÓN ============ *@
-    <section id="inicio" class="exploreway-hero exploreway-hero--dark">
+@*
+    EL DESCENSO
+    El inicio es un solo viaje vertical: de la cumbre (2 600 m) al arrecife (-18 m).
+    Las alturas de cada parada son las reales de cada lugar de El Salvador y alimentan el altímetro fijo.
+    El comportamiento (parallax, altímetro, revelados) vive en wwwroot/js/inicio.js.
+*@
 
-        <div class="exploreway-hero-topo" aria-hidden="true">
-            <svg viewBox="0 0 1440 700" preserveAspectRatio="xMidYMid slice">
-                <path class="exploreway-topo-line exploreway-topo-line--mint" style="--i:0" d="M-40,140 C260,80 520,190 800,120 C1060,65 1280,170 1480,105" />
-                <path class="exploreway-topo-line exploreway-topo-line--sky" style="--i:1" d="M-40,320 C320,255 580,360 860,295 C1100,240 1300,340 1480,275" />
-                <path class="exploreway-topo-line exploreway-topo-line--mint" style="--i:2" d="M-40,520 C360,470 640,560 920,500 C1160,450 1340,540 1480,485" />
+<div class="ew-inicio ew-pre" id="ew-inicio">
+
+    @* ALTÍMETRO — lectura viva de la altitud mientras se baja *@
+    <aside class="ew-alt" aria-hidden="true">
+        <div class="ew-alt-lectura">
+            <span class="ew-alt-num">2 600</span><span class="ew-alt-unidad">m</span>
+        </div>
+        <span class="ew-alt-ref">sobre el nivel del mar</span>
+        <div class="ew-alt-regla"><i class="ew-alt-marca"></i></div>
+    </aside>
+
+    @* ============ HERO ============ *@
+    <section id="inicio" class="ew-hero" data-alt="2600">
+
+        <div class="ew-escena ew-escena--fondo" aria-hidden="true">
+            <div class="ew-cielo"></div>
+            <div class="ew-estrellas"></div>
+            <div class="ew-luna" data-prof="0.04"></div>
+
+            <svg class="ew-capa" data-prof="0.12" data-cresta="alpina" data-base="560" data-amp="400" style="--n:0" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+                <defs>
+                    <linearGradient id="ew-g0" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#4a86ad" /><stop offset="0.4" stop-color="#25527a" /><stop offset="1" stop-color="#17365c" />
+                    </linearGradient>
+                </defs>
+                <path fill="url(#ew-g0)" d="M-50 900 L-50 560 L400 470 L800 560 L1200 450 L1650 560 L1650 900Z" />
+            </svg>
+            <svg class="ew-capa" data-prof="0.28" data-cresta="alpina" data-base="640" data-amp="260" style="--n:1" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+                <defs>
+                    <linearGradient id="ew-g1" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#2f7390" /><stop offset="0.5" stop-color="#17475f" /><stop offset="1" stop-color="#0f3345" />
+                    </linearGradient>
+                </defs>
+                <path fill="url(#ew-g1)" d="M-50 900 L-50 650 L500 600 L900 660 L1300 590 L1650 650 L1650 900Z" />
+            </svg>
+            <svg class="ew-capa" data-prof="0.46" data-cresta="suave" data-base="680" data-amp="140" style="--n:2" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+                <defs>
+                    <linearGradient id="ew-g2" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#14705a" /><stop offset="0.5" stop-color="#0c4a47" /><stop offset="1" stop-color="#082b33" />
+                    </linearGradient>
+                </defs>
+                <path fill="url(#ew-g2)" d="M-50 900 L-50 720 L500 700 L1000 740 L1650 700 L1650 900Z" />
             </svg>
         </div>
 
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="position-relative px-4 px-md-8">
-            <div class="exploreway-hero-grid">
-                <div>
-                    <MudText Typo="Typo.h1" Class="exploreway-hero-title" data-reveal>
-                        Tu próxima<br />
-                        <span class="exploreway-hero-accent">gran aventura</span> empieza aquí.
-                    </MudText>
-
-                    <MudText Typo="Typo.body1" Class="exploreway-hero-sub" data-reveal data-reveal-delay="120">
-                        Expediciones de montaña, rutas de ecoturismo y buceo con guías certificados.
-                        Elegí tu destino, reservá tu cupo y salí a explorar.
-                    </MudText>
-
-                    <div class="exploreway-hero-cta-row" data-reveal data-reveal-delay="200">
-                        <MudButton Variant="Variant.Filled"
-                                   Size="Size.Large"
-                                   Class="rounded-pill px-6 py-3 text-none exploreway-btn-primary"
-                                   OnClick="@(() => IrASeccionAsync("#reserva"))"
-                                   EndIcon="@Icons.Material.Filled.Search">
-                            Ver expediciones
-                        </MudButton>
-                        <a href="#pasos" class="exploreway-hero-link" @onclick="@(() => IrASeccionAsync("#pasos"))" @onclick:preventDefault>
-                            Cómo funciona
-                            <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" />
-                        </a>
-                    </div>
-
-                    <div class="exploreway-stat-row" data-reveal data-reveal-delay="280">
-                        <div>
-                            <span class="exploreway-stat-value">48</span>
-                            <span class="exploreway-stat-label">Expediciones activas</span>
-                        </div>
-                        <div>
-                            <span class="exploreway-stat-value">12</span>
-                            <span class="exploreway-stat-label">Países</span>
-                        </div>
-                        <div>
-                            <span class="exploreway-stat-value">4.9</span>
-                            <span class="exploreway-stat-label">Valoración promedio</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="exploreway-hero-frame" data-reveal data-reveal-delay="180">
-                    <div class="exploreway-hero-photo">
-                        <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1000&q=80"
-                             alt="Guía de expedición sobre un glaciar patagónico" loading="lazy" />
-                        <div class="exploreway-hero-photo-veil"></div>
-                        <svg class="exploreway-hero-route" viewBox="0 0 400 500" preserveAspectRatio="none" aria-hidden="true">
-                            <path class="exploreway-hero-route-line" d="M40,460 C120,400 90,300 170,250 C240,205 220,120 300,60" />
-                            <circle class="exploreway-hero-pin" cx="40" cy="460" r="6" />
-                            <circle class="exploreway-hero-pin" cx="300" cy="60" r="6" />
-                        </svg>
-                        <span class="exploreway-hero-coords">S 50.98° · Patagonia</span>
-                    </div>
-                </div>
+        <div class="ew-hero-cuerpo">
+            <h1 class="ew-titular">
+                <span class="ew-linea"><span style="--d:420">Del volcán</span></span>
+                <span class="ew-linea"><span style="--d:540">al arrecife.</span></span>
+            </h1>
+            <p class="ew-sub ew-entra" style="--d:900">
+                Expediciones por volcanes, lagos y arrecifes de El Salvador con guías certificados.
+                Elegí tu destino, reservá tu cupo y salí a explorar.
+            </p>
+            <div class="ew-acciones ew-entra" style="--d:1050">
+                <a class="ew-btn" href="/cliente/destinos">Ver destinos</a>
+                <a class="ew-enlace" href="#pasos" @onclick="@(() => IrASeccionAsync("#pasos"))" @onclick:preventDefault>Cómo funciona</a>
             </div>
-        </MudContainer>
+        </div>
 
-        @* BUSCADOR DE RESERVA — PASE DE EMBARQUE *@
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="exploreway-booking-wrap px-4 px-md-8">
-            <MudPaper Elevation="0" Class="exploreway-booking pa-5 pa-md-6" id="reserva"
-                      data-reveal data-reveal-delay="360">
-                <MudGrid Spacing="3" Class="align-center">
-                    <MudItem xs="12" sm="6" md="3" Class="exploreway-booking-field">
-                        <MudSelect T="string" Label="Destino" @bind-Value="_selectedDestination" Variant="Variant.Outlined" Margin="Margin.Dense">
-                            <MudSelectItem Value="@("Patagonia Chilena")">Patagonia Chilena</MudSelectItem>
-                            <MudSelectItem Value="@("Selva Costa Rica")">Selva Costa Rica</MudSelectItem>
-                            <MudSelectItem Value="@("Alpes Suizos")">Alpes Suizos</MudSelectItem>
-                            <MudSelectItem Value="@("Arrecife Caribeño")">Arrecife Caribeño</MudSelectItem>
-                        </MudSelect>
-                    </MudItem>
+        <div class="ew-escena ew-escena--frente" aria-hidden="true">
+            <svg class="ew-capa" data-prof="0.7" data-cresta="suave" data-base="780" data-amp="70" style="--n:3" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+                <defs>
+                    <linearGradient id="ew-g3" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#0a3b2e" /><stop offset="1" stop-color="#052019" />
+                    </linearGradient>
+                </defs>
+                <path fill="url(#ew-g3)" d="M-50 900 L-50 790 L600 770 L1100 800 L1650 770 L1650 900Z" />
+            </svg>
+            <svg class="ew-capa" data-prof="1" data-cresta="bosque" data-base="850" data-amp="90" style="--n:4" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+                <path fill="#041517" d="M-50 900 L-50 840 L1650 840 L1650 900Z" />
+            </svg>
+        </div>
 
-                    <MudItem xs="12" sm="6" md="3" Class="exploreway-booking-field">
-                        <MudSelect T="string" Label="Actividad" @bind-Value="_selectedType" Variant="Variant.Outlined" Margin="Margin.Dense">
-                            <MudSelectItem Value="@("Trekking & Montaña")">Trekking & Montaña</MudSelectItem>
-                            <MudSelectItem Value="@("Buceo & Snorkel")">Buceo & Snorkel</MudSelectItem>
-                            <MudSelectItem Value="@("Kayak & Ríos")">Kayak & Ríos</MudSelectItem>
-                        </MudSelect>
-                    </MudItem>
-
-                    <MudItem xs="12" sm="6" md="3" Class="exploreway-booking-field">
-                        <MudDatePicker Label="Fecha de salida" @bind-Date="_selectedDate" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                    </MudItem>
-
-                    <MudItem xs="12" sm="6" md="3">
-                        <MudButton Variant="Variant.Filled"
-                                   FullWidth="true"
-                                   Size="Size.Large"
-                                   Class="rounded-pill py-3 text-none exploreway-btn-primary"
-                                   OnClick="ConsultarDisponibilidad"
-                                   StartIcon="@Icons.Material.Filled.Search">
-                            Ver Cupos
-                        </MudButton>
-                    </MudItem>
-                </MudGrid>
-            </MudPaper>
-        </MudContainer>
+        <nav class="ew-ruta ew-entra" style="--d:1250" aria-label="Destinos del viaje">
+            <a href="#parada-santaana" @onclick="@(() => IrASeccionAsync("#parada-santaana"))" @onclick:preventDefault>
+                <span class="ew-ruta-nombre">Volcán de Santa Ana</span>
+                <span class="ew-ruta-alt">2 381 m</span>
+            </a>
+            <a href="#parada-coatepeque" @onclick="@(() => IrASeccionAsync("#parada-coatepeque"))" @onclick:preventDefault>
+                <span class="ew-ruta-nombre">Lago de Coatepeque</span>
+                <span class="ew-ruta-alt">745 m</span>
+            </a>
+            <a href="#parada-cobanos" @onclick="@(() => IrASeccionAsync("#parada-cobanos"))" @onclick:preventDefault>
+                <span class="ew-ruta-nombre">Arrecife de Los Cóbanos</span>
+                <span class="ew-ruta-alt">−18 m</span>
+            </a>
+        </nav>
     </section>
 
-    @* ============ MARQUEE DE ACTIVIDADES ============ *@
-    <div class="exploreway-marquee" aria-hidden="true">
-        <div class="exploreway-marquee-track">
-            @foreach (var grupo in new[] { 1, 2 })
-            {
-                <div class="exploreway-marquee-group">
-                    @foreach (var actividad in _actividades)
-                    {
-                        <span>@actividad</span>
-                        <i></i>
-                    }
-                </div>
-            }
-        </div>
+    @* ============ TRAMO DE TIERRA: GLACIAR Y VOLCÁN ============ *@
+    <div id="destinos" class="ew-tramo ew-tramo--tierra">
+
+        <article id="parada-santaana" class="ew-parada" data-alt="2381" data-ew-in>
+            <figure class="ew-foto">
+                <img src="/img/santa-ana.jpg"
+                     width="1920" height="1440" alt="Laguna de color verde esmeralda dentro del cráter del volcán de Santa Ana" loading="lazy" />
+            </figure>
+            <div class="ew-parada-texto">
+                <h2 class="ew-nombre">
+                    <span class="ew-linea"><span style="--d:150">Volcán</span></span>
+                    <span class="ew-linea"><span style="--d:260">de Santa Ana</span></span>
+                </h2>
+                <p class="ew-tipo">Trekking de volcán</p>
+                <p class="ew-desc">Ascenso guiado hasta el cráter, a 2 381 m, donde espera una laguna de color esmeralda.</p>
+                <p class="ew-precio">Desde <strong>$380 USD</strong> por persona</p>
+                <a class="ew-btn" href="/cliente/destinos">Reservar cupo</a>
+            </div>
+        </article>
+
+        <article id="parada-coatepeque" class="ew-parada ew-parada--inv" data-alt="745" data-ew-in>
+            <figure class="ew-foto">
+                <img src="/img/coatepeque.jpg"
+                     width="1500" height="1125" alt="Lago de Coatepeque, de agua turquesa, rodeado de bosque" loading="lazy" />
+            </figure>
+            <div class="ew-parada-texto">
+                <h2 class="ew-nombre">
+                    <span class="ew-linea"><span style="--d:150">Lago de</span></span>
+                    <span class="ew-linea"><span style="--d:260">Coatepeque</span></span>
+                </h2>
+                <p class="ew-tipo">Kayak y senderismo</p>
+                <p class="ew-desc">Remá sobre un lago de cráter a 745 m y recorré sus miradores entre bosques.</p>
+                <p class="ew-precio">Desde <strong>$220 USD</strong> por persona</p>
+                <a class="ew-btn" href="/cliente/destinos">Reservar cupo</a>
+            </div>
+        </article>
     </div>
 
-    @* ============ DESTINOS — GRILLA EDITORIAL ============ *@
-    <section id="destinos" class="exploreway-section">
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
-            <div class="exploreway-section-head" data-reveal>
-                <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">
-                    Destinos que dejan sin aliento
-                </MudText>
-                <MudText Typo="Typo.body1" Class="exploreway-section-lead">
-                    Expediciones verificadas con cupos reales y estándares de seguridad.
-                </MudText>
-            </div>
-
-            <MudGrid Spacing="4">
-                <MudItem xs="12" md="7">
-                    <article class="exploreway-dest exploreway-dest--feature" data-reveal>
-                        <img src="https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=1200&q=80"
-                             alt="Glaciar Perito Moreno" loading="lazy" />
-                        <div class="exploreway-dest-veil"></div>
-                        <div class="exploreway-dest-meta">
-                            <span class="exploreway-dest-chip">Montaña</span>
-                            <span class="exploreway-dest-data">4D · 3200M</span>
-                        </div>
-                        <div class="exploreway-dest-info">
-                            <MudText Typo="Typo.h4" Class="text-white font-weight-bold">Glaciar Perito Moreno</MudText>
-                            <p>Expedición sobre hielo con equipamiento técnico y guía especializado.</p>
-                            <span class="exploreway-dest-price-line">$380 USD por persona</span>
-                            <button type="button" class="exploreway-dest-cta" @onclick="@(() => ConsultarDisponibilidad())">
-                                Reservar cupo
-                            </button>
-                        </div>
-                    </article>
-                </MudItem>
-
-                <MudItem xs="12" md="5" Class="d-flex flex-column gap-4">
-                    <article class="exploreway-dest exploreway-dest--mini" data-reveal data-reveal-delay="140">
-                        <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1000&q=80"
-                             alt="Arrecife Mesoamericano" loading="lazy" />
-                        <div class="exploreway-dest-veil"></div>
-                        <div class="exploreway-dest-meta">
-                            <span class="exploreway-dest-chip">Buceo</span>
-                            <span class="exploreway-dest-data">3D · -18M</span>
-                        </div>
-                        <div class="exploreway-dest-info">
-                            <MudText Typo="Typo.h6" Class="text-white font-weight-bold">Arrecife Mesoamericano</MudText>
-                            <p>Inmersión guiada en aguas cristalinas de alta biodiversidad.</p>
-                            <span class="exploreway-dest-price-line">$290 USD por persona</span>
-                            <button type="button" class="exploreway-dest-cta" @onclick="@(() => ConsultarDisponibilidad())">
-                                Reservar cupo
-                            </button>
-                        </div>
-                    </article>
-
-                    <article class="exploreway-dest exploreway-dest--mini" data-reveal data-reveal-delay="280">
-                        <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=80"
-                             alt="Ruta Volcánica y Termas" loading="lazy" />
-                        <div class="exploreway-dest-veil"></div>
-                        <div class="exploreway-dest-meta">
-                            <span class="exploreway-dest-chip">Ecoturismo</span>
-                            <span class="exploreway-dest-data">2D · 1800M</span>
-                        </div>
-                        <div class="exploreway-dest-info">
-                            <MudText Typo="Typo.h6" Class="text-white font-weight-bold">Ruta Volcánica & Termas</MudText>
-                            <p>Senderismo entre bosques nubosos y aguas termales naturales.</p>
-                            <span class="exploreway-dest-price-line">$220 USD por persona</span>
-                            <button type="button" class="exploreway-dest-cta" @onclick="@(() => ConsultarDisponibilidad())">
-                                Reservar cupo
-                            </button>
-                        </div>
-                    </article>
-                </MudItem>
-            </MudGrid>
-        </MudContainer>
-    </section>
-
-    @* ============ CÓMO FUNCIONA ============ *@
-    <section id="pasos" class="exploreway-section exploreway-section--steps">
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
-            <div class="exploreway-section-head" data-reveal>
-                <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">
-                    Salir es más fácil que nunca
-                </MudText>
-            </div>
-
-            <ol class="exploreway-steps" data-reveal>
-                <li>
-                    <span class="exploreway-step-num">WP-01</span>
-                    <div class="exploreway-step-icon">
-                        <MudIcon Icon="@Icons.Material.Filled.TravelExplore" Style="color: var(--ew-primary);" />
-                    </div>
-                    <MudText Typo="Typo.h6" Class="font-weight-bold mt-3">Elegí tu aventura</MudText>
-                    <p>Destinos y actividades verificadas, con cupos reales.</p>
-                </li>
-                <li>
-                    <span class="exploreway-step-num">WP-02</span>
-                    <div class="exploreway-step-icon">
-                        <MudIcon Icon="@Icons.Material.Filled.EventAvailable" Style="color: var(--ew-primary);" />
-                    </div>
-                    <MudText Typo="Typo.h6" Class="font-weight-bold mt-3">Reservá tu cupo</MudText>
-                    <p>Reservá al instante y recibí tu itinerario completo.</p>
-                </li>
-                <li>
-                    <span class="exploreway-step-num">WP-03</span>
-                    <div class="exploreway-step-icon">
-                        <MudIcon Icon="@Icons.Material.Filled.Hiking" Style="color: var(--ew-primary);" />
-                    </div>
-                    <MudText Typo="Typo.h6" Class="font-weight-bold mt-3">Viví la experiencia</MudText>
-                    <p>Salí con guías certificados y contanos cómo te fue.</p>
-                </li>
-            </ol>
-        </MudContainer>
-    </section>
-
-    @* ============ NOSOTROS — BANDA OSCURA ============ *@
-    <section id="nosotros" class="exploreway-about-band position-relative overflow-hidden">
-        <div class="exploreway-topo exploreway-topo--band" aria-hidden="true">
-            <svg viewBox="0 0 1440 500" preserveAspectRatio="xMidYMid slice">
-                <path class="exploreway-topo-line exploreway-topo-line--mint" style="--i:0" d="M-40,120 C260,60 520,170 800,100 C1060,45 1280,150 1480,85" />
-                <path class="exploreway-topo-line exploreway-topo-line--sky" style="--i:1" d="M-40,280 C320,215 580,320 860,255 C1100,200 1300,300 1480,235" />
-                <path class="exploreway-topo-line exploreway-topo-line--mint" style="--i:2" d="M-40,430 C360,380 640,470 920,410 C1160,360 1340,450 1480,395" />
+    @* ============ LA ORILLA: NIVEL DEL MAR ============ *@
+    <section id="pasos" class="ew-tramo ew-tramo--costa" data-alt="0">
+        <div class="ew-ola" aria-hidden="true">
+            <svg viewBox="0 0 1600 90" preserveAspectRatio="none" class="ew-ola-a">
+                <path d="M0 0H1600V46 q-50 -34 -100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0Z" />
+            </svg>
+            <svg viewBox="0 0 1600 90" preserveAspectRatio="none" class="ew-ola-b">
+                <path d="M0 0H1600V30 q-50 -26 -100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0 t-100 0Z" />
             </svg>
         </div>
 
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8 position-relative py-14 py-md-16">
-            <MudGrid Spacing="8" Class="align-center">
-                <MudItem xs="12" md="6">
-                    <MudText Typo="Typo.h3" Class="font-weight-bold text-white mb-4" data-reveal
-                             Style="letter-spacing: -0.02em;">
-                        Tu compañero de confianza<br />en cada ruta
-                    </MudText>
-                    <MudText Typo="Typo.body1" Class="mb-6" Style="color: #cbd5e1; line-height: 1.75; max-width: 32rem;" data-reveal data-reveal-delay="120">
-                        En <strong class="exploreway-mint-strong">ExploreWay</strong> facilitamos la organización de
-                        tus viajes de aventura combinando tecnología intuitiva, guías locales expertos
-                        y respeto por la biodiversidad.
-                    </MudText>
-                    <div class="exploreway-chip-line-row" data-reveal data-reveal-delay="240">
-                        <span class="exploreway-chip-line">Tecnología intuitiva</span>
-                        <span class="exploreway-chip-line">Guías locales expertos</span>
-                        <span class="exploreway-chip-line">Biodiversidad primero</span>
-                    </div>
+        <div class="ew-pasos-cab" data-ew-in>
+            <h2 class="ew-titulo-sec">Reservar lleva tres pasos</h2>
+        </div>
 
-                    <div class="exploreway-stat-row" data-reveal data-reveal-delay="320">
-                        <div>
-                            <span class="exploreway-stat-value">9</span>
-                            <span class="exploreway-stat-label">Años operando</span>
-                        </div>
-                        <div>
-                            <span class="exploreway-stat-value">65+</span>
-                            <span class="exploreway-stat-label">Guías certificados</span>
-                        </div>
-                    </div>
-                </MudItem>
-
-                <MudItem xs="12" md="6" Class="d-flex justify-center">
-                    <div class="exploreway-about-frame" data-reveal data-reveal-delay="150">
-                        <img src="https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=1000&q=80"
-                             alt="Equipo ExploreWay en plena expedición"
-                             class="rounded-2xl shadow-lg w-100 exploreway-about-img"
-                             style="max-height: 400px; object-fit: cover;" />
-                    </div>
-                </MudItem>
-            </MudGrid>
-        </MudContainer>
+        <ol class="ew-pasos-lista" data-ew-in>
+            <li>
+                <span class="ew-paso-n">1</span>
+                <h3>Elegí tu aventura</h3>
+                <p>Destinos y actividades verificadas, con cupos reales.</p>
+            </li>
+            <li>
+                <span class="ew-paso-n">2</span>
+                <h3>Reservá tu cupo</h3>
+                <p>Confirmá al instante y recibí tu itinerario completo.</p>
+            </li>
+            <li>
+                <span class="ew-paso-n">3</span>
+                <h3>Viví la experiencia</h3>
+                <p>Salí con guías certificados y contanos cómo te fue.</p>
+            </li>
+        </ol>
     </section>
 
-    @* ============ CIERRE — VERDE COMPROMETIDO ============ *@
-    <section class="exploreway-cta-final-wrap">
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
-            <div class="exploreway-cta-final text-center py-12 px-4" data-reveal>
-                <MudText Typo="Typo.h3" Class="font-weight-bold mb-3 exploreway-cta-title" Style="letter-spacing: -0.025em;">
-                    La montaña no espera.
-                </MudText>
-                <MudText Typo="Typo.body1" Class="mb-8 mx-auto" Style="color: rgba(11, 19, 41, 0.8); max-width: 34rem; line-height: 1.7;">
-                    Elegí tu destino, reservá tu cupo al instante y dejá el resto en nuestras manos.
-                </MudText>
-                <div class="d-flex flex-wrap gap-4 justify-center align-center">
-                    <MudButton Variant="Variant.Filled"
-                               Size="Size.Large"
-                               Class="rounded-pill px-8 py-3 text-none exploreway-btn-white"
-                               Href="/destinos"
-                               EndIcon="@Icons.Material.Filled.ArrowForward">
-                        Explorar destinos
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined"
-                               Size="Size.Large"
-                               Href="/registro"
-                               Class="rounded-pill px-8 py-3 text-none exploreway-btn-ink">
-                        Crear cuenta
-                    </MudButton>
+    @* ============ TRAMO DE MAR: ARRECIFE, NOSOTROS Y CIERRE ============ *@
+    <div class="ew-tramo ew-tramo--mar">
+        <div class="ew-luz-agua" aria-hidden="true"></div>
+
+        <article id="parada-cobanos" class="ew-parada" data-alt="-18" data-ew-in>
+            <figure class="ew-foto">
+                <img src="/img/cobanos.jpg"
+                     width="1920" height="1536" alt="Coral negro bajo el agua en el arrecife de Los Cóbanos" loading="lazy" />
+            </figure>
+            <div class="ew-parada-texto">
+                <h2 class="ew-nombre">
+                    <span class="ew-linea"><span style="--d:150">Arrecife de</span></span>
+                    <span class="ew-linea"><span style="--d:260">Los Cóbanos</span></span>
+                </h2>
+                <p class="ew-tipo">Buceo guiado</p>
+                <p class="ew-desc">Inmersión guiada hasta 18 m en el área marina protegida, entre coral negro y peces de arrecife.</p>
+                <p class="ew-precio">Desde <strong>$290 USD</strong> por persona</p>
+                <a class="ew-btn" href="/cliente/destinos">Reservar cupo</a>
+            </div>
+        </article>
+
+        <section id="nosotros" class="ew-nosotros" data-alt="-30">
+            <div class="ew-nosotros-texto" data-ew-in>
+                <h2 class="ew-titulo-sec">Tu compañero de confianza en cada ruta</h2>
+                <p>
+                    En <strong>ExploreWay</strong> organizamos tus viajes de aventura con tecnología simple,
+                    guías locales expertos y respeto por la biodiversidad.
+                </p>
+                <p>
+                    Llevamos nueve años operando y trabajamos con más de 65 guías certificados.
+                </p>
+            </div>
+            <figure class="ew-ojo" data-ew-in>
+                <img src="/img/cerro-verde.jpg"
+                     width="1280" height="960" alt="Cerros del Parque Nacional Cerro Verde bajo un cielo con nubes" loading="lazy" />
+            </figure>
+        </section>
+
+        <section class="ew-cierre" data-alt="-30">
+            <div class="ew-burbujas" aria-hidden="true">
+                @for (var i = 0; i < _burbujas.Length; i++)
+                {
+                    var b = _burbujas[i];
+                    <i style="--x:@(b.X)%;--s:@(b.S)px;--t:@(b.T)s;--d:@(b.D)s"></i>
+                }
+            </div>
+            <div class="ew-cierre-cuerpo" data-ew-in>
+                <h2 class="ew-cierre-titulo">Elegí por dónde empezar</h2>
+                <p>Reservá tu cupo al instante y dejá el resto en manos de tu guía.</p>
+                <div class="ew-acciones">
+                    <a class="ew-btn" href="/cliente/destinos">Explorar destinos</a>
+                    <AuthorizeView>
+                        <NotAuthorized>
+                            <a class="ew-enlace" href="/registro">Crear cuenta</a>
+                        </NotAuthorized>
+                    </AuthorizeView>
                 </div>
             </div>
-        </MudContainer>
-    </section>
+            <p class="ew-creditos">
+                Fotos de Erneestoo y JMRAFFi (CC BY-SA 4.0 y CC BY 4.0) y de ChikaReef (CC BY-SA 4.0),
+                vía Wikimedia Commons.
+            </p>
+        </section>
+    </div>
 </div>
 
 @code {
-    private string _selectedDestination = "Patagonia Chilena";
-    private string _selectedType = "Trekking & Montaña";
-    private DateTime? _selectedDate = DateTime.Today.AddDays(10);
-
-    private static readonly string[] _actividades =
+    // Burbujas del cierre: posición (%), tamaño (px), duración y retraso (s). Fijas para que el render sea estable.
+    private static readonly (int X, int S, int T, int D)[] _burbujas =
     [
-        "Trekking", "Buceo", "Kayak", "Ecoturismo", "Montaña", "Termas", "Snorkel", "Camping"
+        (6, 8, 11, 0), (14, 14, 14, 3), (23, 6, 9, 6), (31, 10, 13, 1), (42, 18, 16, 5),
+        (51, 7, 10, 8), (60, 12, 14, 2), (69, 9, 12, 7), (78, 16, 17, 4), (86, 7, 10, 9), (93, 11, 13, 6)
     ];
+
+    private bool _iniciado;
 
     private async Task IrASeccionAsync(string idSeccion)
         => await JS.InvokeVoidAsync("exploreWayJs.scrollToSection", idSeccion);
 
-    private void ConsultarDisponibilidad()
-    {
-        Snackbar.Add($"Buscando cupos para {_selectedDestination}...", Severity.Success);
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // El DOM se re-renderiza al activar el circuito interactivo, dejando el
-        // observador inicial de exploreway.js apuntando a nodos ya descartados.
-        // Se vuelve a inicializar una vez que el contenido interactivo está montado.
+        // Con prerender, el DOM se reemplaza al activar el circuito interactivo: el comportamiento
+        // (crestas, parallax, altímetro, revelados) se enciende solo cuando el contenido ya es el definitivo.
         if (firstRender)
         {
-            await JS.InvokeVoidAsync("exploreWayJs.initScrollReveals");
+            await JS.InvokeVoidAsync("ewInicio.init");
+            _iniciado = true;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (!_iniciado) return;
+        try
+        {
+            await JS.InvokeVoidAsync("ewInicio.dispose");
+        }
+        catch (JSDisconnectedException)
+        {
+            // El circuito ya se cerró: no hay nada que limpiar.
+        }
+        catch (InvalidOperationException)
+        {
+            // Navegación durante el prerender o cierre del circuito.
         }
     }
 }

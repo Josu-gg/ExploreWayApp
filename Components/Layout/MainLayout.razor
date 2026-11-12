@@ -25,14 +25,13 @@
 
     @* APPBAR ADAPTATIVA — TRANSPARENTE SOBRE EL HERO, SÓLIDA AL BAJAR *@
     <MudAppBar Elevation="0" Dense="false" Class="exploreway-appbar px-4 px-md-8">
-        <a href="#inicio" class="exploreway-brand d-flex align-center text-decoration-none">
-            <div class="exploreway-logo-badge mr-3">
-                <MudIcon Icon="@Icons.Material.Filled.Explore" Size="Size.Medium" />
-            </div>
-            <MudText Typo="Typo.h5" Class="font-weight-bold exploreway-brand-title">
-                Explore<span class="exploreway-brand-way">Way</span>
-            </MudText>
-            <span class="exploreway-brand-coords d-none d-lg-inline">S 50.9° W 73.0°</span>
+        <a href="/#inicio" class="exploreway-brand ew-marca" aria-label="ExploreWay, ir al inicio">
+            <svg class="ew-marca-logo" viewBox="0 0 40 40" aria-hidden="true">
+                <rect x="1" y="1" width="38" height="38" rx="11" fill="#0b1329" stroke="#5BE3C2" stroke-opacity=".45" />
+                <path d="M6 27 L16 11 L21 19 L25 14 L34 27 Z" fill="#5BE3C2" />
+                <path d="M6 31 q3.5 -3 7 0 t7 0 t7 0 t7 0" fill="none" stroke="#5BBAE3" stroke-width="2.2" stroke-linecap="round" />
+            </svg>
+            <span class="ew-marca-nombre">Explore<b>Way</b></span>
         </a>
 
         <MudSpacer />
@@ -115,13 +114,13 @@
                 <div class="d-none d-sm-flex align-center gap-3">
                     <MudButton Variant="Variant.Outlined"
                                Href="/login"
-                               Class="rounded-pill px-5 py-2 text-none exploreway-btn-session">
+                               Class="px-5 py-2 text-none ew-nav-entrar">
                         Iniciar Sesión
                     </MudButton>
 
                     <MudButton Variant="Variant.Filled"
                                Href="/registro"
-                               Class="rounded-pill px-5 py-2 text-none exploreway-btn-cta">
+                               Class="px-5 py-2 text-none ew-nav-registro">
                         Registrarse
                     </MudButton>
                 </div>
