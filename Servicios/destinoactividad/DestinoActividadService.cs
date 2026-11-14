@@ -10,6 +10,9 @@ public sealed class DestinoActividadService(HttpClient http) : IDestinoActividad
     public Task<List<DestinoActividadSalida>> ListarAsync() =>
         http.LeerTodasLasPaginasAsync<DestinoActividadSalida>(Url);
 
+    public async Task<List<DestinoActividadSalida>> ListarPorDestinoAsync(int idDestino) =>
+        await http.LeerAsync<List<DestinoActividadSalida>>($"{Url}/destino/{idDestino}") ?? [];
+
     public Task<DestinoActividadSalida?> ObtenerAsync(int id) =>
         http.LeerAsync<DestinoActividadSalida>($"{Url}/{id}");
 

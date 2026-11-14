@@ -13,6 +13,26 @@
     }
   },
 
+  // Foco y bloqueo de scroll para la vista ampliada de la galería.
+  enfocar: function (elementId) {
+    const el = document.getElementById(elementId);
+    if (el) el.focus();
+  },
+
+  bloquearScroll: function (bloquear) {
+    document.documentElement.style.overflow = bloquear ? 'hidden' : '';
+  },
+
+  // Lleva el panel del asistente a la vista solo si quedó fuera (típico en móvil).
+  scrollSiHaceFalta: function (elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const top = el.getBoundingClientRect().top;
+    if (top >= 70 && top < window.innerHeight * 0.5) return;
+    const reducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: top + window.pageYOffset - 84, behavior: reducido ? 'auto' : 'smooth' });
+  },
+
   // Navbar: acumula cuerpo (sólida + blur + sombra) al dejar el tope,
   // y se oculta al bajar / reaparece al subir o al llegar arriba.
   initNavbarScrollEffect: function () {
@@ -121,6 +141,24 @@
     }, { rootMargin: '0px 0px -10% 0px', threshold: 0.12 });
 
     objetivos.forEach(el => observador.observe(el));
+  },
+
+  // Aviso de cookies: localStorage puede fallar (modo privado, bloqueado), por eso va en try/catch.
+  leerConsentimientoCookies: function () {
+    try {
+      return window.localStorage.getItem("ew-cookies");
+    } catch (e) {
+      return null;
+    }
+  },
+
+  guardarConsentimientoCookies: function (valor) {
+    try {
+      window.localStorage.setItem("ew-cookies", valor);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 };
 

@@ -211,13 +211,21 @@
 
             <MudText Typo="Typo.body1" Class="text-center" Style="color: #475569;">
                 ¿Ya tenés cuenta?
-                <MudLink Href="/login" Class="exploreway-auth-link font-weight-bold">Iniciá sesión</MudLink>
+                <MudLink Href="@RutaLogin" Class="exploreway-auth-link font-weight-bold">Iniciá sesión</MudLink>
             </MudText>
         </div>
     </main>
 </div>
 
 @code {
+    // Si llegó desde una reserva, el inicio de sesión lo devuelve a ella. Solo rutas internas.
+    [SupplyParameterFromQuery(Name = "returnUrl")] public string? ReturnUrl { get; set; }
+
+    private string RutaLogin =>
+        !string.IsNullOrWhiteSpace(ReturnUrl) && ReturnUrl.StartsWith('/') && !ReturnUrl.StartsWith("//") && !ReturnUrl.Contains('\\')
+            ? $"/login?returnUrl={Uri.EscapeDataString(ReturnUrl)}"
+            : "/login";
+
     private readonly RegistroClienteGuardar datos = new();
     private MudForm _formulario = default!;
     private DateTime? _fechaNacimiento;
@@ -295,7 +303,7 @@
 
             await AuthService.RegistrarClienteAsync(datos);
             Snackbar.Add("¡Cuenta creada! Ya podés iniciar sesión.", Severity.Success);
-            Navegacion.NavigateTo("/login");
+            Navegacion.NavigateTo(RutaLogin);
         }
         catch (ApiException ex)
         {

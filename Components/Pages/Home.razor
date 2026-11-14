@@ -27,36 +27,19 @@
     @* ============ HERO ============ *@
     <section id="inicio" class="ew-hero" data-alt="2600">
 
+        @* Fondo de video: entra como la apertura de una película (franjas que se abren y un leve acercamiento). *@
         <div class="ew-escena ew-escena--fondo" aria-hidden="true">
-            <div class="ew-cielo"></div>
-            <div class="ew-estrellas"></div>
-            <div class="ew-luna" data-prof="0.04"></div>
-
-            <svg class="ew-capa" data-prof="0.12" data-cresta="alpina" data-base="560" data-amp="400" style="--n:0" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
-                <defs>
-                    <linearGradient id="ew-g0" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0" stop-color="#4a86ad" /><stop offset="0.4" stop-color="#25527a" /><stop offset="1" stop-color="#17365c" />
-                    </linearGradient>
-                </defs>
-                <path fill="url(#ew-g0)" d="M-50 900 L-50 560 L400 470 L800 560 L1200 450 L1650 560 L1650 900Z" />
-            </svg>
-            <svg class="ew-capa" data-prof="0.28" data-cresta="alpina" data-base="640" data-amp="260" style="--n:1" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
-                <defs>
-                    <linearGradient id="ew-g1" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0" stop-color="#2f7390" /><stop offset="0.5" stop-color="#17475f" /><stop offset="1" stop-color="#0f3345" />
-                    </linearGradient>
-                </defs>
-                <path fill="url(#ew-g1)" d="M-50 900 L-50 650 L500 600 L900 660 L1300 590 L1650 650 L1650 900Z" />
-            </svg>
-            <svg class="ew-capa" data-prof="0.46" data-cresta="suave" data-base="680" data-amp="140" style="--n:2" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
-                <defs>
-                    <linearGradient id="ew-g2" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0" stop-color="#14705a" /><stop offset="0.5" stop-color="#0c4a47" /><stop offset="1" stop-color="#082b33" />
-                    </linearGradient>
-                </defs>
-                <path fill="url(#ew-g2)" d="M-50 900 L-50 720 L500 700 L1000 740 L1650 700 L1650 900Z" />
-            </svg>
+            <div class="ew-cine" data-prof="0.08">
+                <video class="ew-cine-video" id="ew-cine-video" autoplay muted loop playsinline preload="auto"
+                       disablepictureinpicture disableremoteplayback tabindex="-1">
+                    <source src="/videos/caro_video_no_watermark.mp4" type="video/mp4" />
+                </video>
+            </div>
+            <div class="ew-cine-grado"></div>
+            <div class="ew-cine-grano"></div>
         </div>
+        <div class="ew-cine-franja ew-cine-franja--arriba" aria-hidden="true"></div>
+        <div class="ew-cine-franja ew-cine-franja--abajo" aria-hidden="true"></div>
 
         <div class="ew-hero-cuerpo">
             <h1 class="ew-titular">
@@ -68,24 +51,13 @@
                 Elegí tu destino, reservá tu cupo y salí a explorar.
             </p>
             <div class="ew-acciones ew-entra" style="--d:1050">
-                <a class="ew-btn" href="/cliente/destinos">Ver destinos</a>
+                <a class="ew-btn" href="/explorar">Ver destinos</a>
                 <a class="ew-enlace" href="#pasos" @onclick="@(() => IrASeccionAsync("#pasos"))" @onclick:preventDefault>Cómo funciona</a>
             </div>
         </div>
 
-        <div class="ew-escena ew-escena--frente" aria-hidden="true">
-            <svg class="ew-capa" data-prof="0.7" data-cresta="suave" data-base="780" data-amp="70" style="--n:3" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
-                <defs>
-                    <linearGradient id="ew-g3" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0" stop-color="#0a3b2e" /><stop offset="1" stop-color="#052019" />
-                    </linearGradient>
-                </defs>
-                <path fill="url(#ew-g3)" d="M-50 900 L-50 790 L600 770 L1100 800 L1650 770 L1650 900Z" />
-            </svg>
-            <svg class="ew-capa" data-prof="1" data-cresta="bosque" data-base="850" data-amp="90" style="--n:4" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
-                <path fill="#041517" d="M-50 900 L-50 840 L1650 840 L1650 900Z" />
-            </svg>
-        </div>
+        @* Fundido: el video se disuelve en el color con el que empieza la siguiente sección. *@
+        <div class="ew-cine-fundido" aria-hidden="true"></div>
 
         <nav class="ew-ruta ew-entra" style="--d:1250" aria-label="Destinos del viaje">
             <a href="#parada-santaana" @onclick="@(() => IrASeccionAsync("#parada-santaana"))" @onclick:preventDefault>
@@ -119,7 +91,7 @@
                 <p class="ew-tipo">Trekking de volcán</p>
                 <p class="ew-desc">Ascenso guiado hasta el cráter, a 2 381 m, donde espera una laguna de color esmeralda.</p>
                 <p class="ew-precio">Desde <strong>$380 USD</strong> por persona</p>
-                <a class="ew-btn" href="/cliente/destinos">Reservar cupo</a>
+                <a class="ew-btn" href="/explorar">Reservar cupo</a>
             </div>
         </article>
 
@@ -136,7 +108,7 @@
                 <p class="ew-tipo">Kayak y senderismo</p>
                 <p class="ew-desc">Remá sobre un lago de cráter a 745 m y recorré sus miradores entre bosques.</p>
                 <p class="ew-precio">Desde <strong>$220 USD</strong> por persona</p>
-                <a class="ew-btn" href="/cliente/destinos">Reservar cupo</a>
+                <a class="ew-btn" href="/explorar">Reservar cupo</a>
             </div>
         </article>
     </div>
@@ -192,7 +164,7 @@
                 <p class="ew-tipo">Buceo guiado</p>
                 <p class="ew-desc">Inmersión guiada hasta 18 m en el área marina protegida, entre coral negro y peces de arrecife.</p>
                 <p class="ew-precio">Desde <strong>$290 USD</strong> por persona</p>
-                <a class="ew-btn" href="/cliente/destinos">Reservar cupo</a>
+                <a class="ew-btn" href="/explorar">Reservar cupo</a>
             </div>
         </article>
 
@@ -225,7 +197,7 @@
                 <h2 class="ew-cierre-titulo">Elegí por dónde empezar</h2>
                 <p>Reservá tu cupo al instante y dejá el resto en manos de tu guía.</p>
                 <div class="ew-acciones">
-                    <a class="ew-btn" href="/cliente/destinos">Explorar destinos</a>
+                    <a class="ew-btn" href="/explorar">Explorar destinos</a>
                     <AuthorizeView>
                         <NotAuthorized>
                             <a class="ew-enlace" href="/registro">Crear cuenta</a>

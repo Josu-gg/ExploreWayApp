@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using ExploreWayApp.Auth
 @using ExploreWayApp.Servicios
+@using ExploreWayApp.Components.Compartidos
 @inject ISnackbar Snackbar
 @inject NavigationManager NavManager
 @inject SesionUsuario Sesion
@@ -38,16 +39,13 @@
 
         <nav class="exploreway-nav d-none d-md-flex align-center" aria-label="Secciones de la página">
             <a href="/#inicio" class="exploreway-navlink active" data-section-link="inicio">Inicio</a>
+            <a href="/explorar" class="exploreway-navlink">Destinos</a>
             <AuthorizeView Roles="Cliente">
                 <Authorized Context="_cli">
-                    <a href="/cliente/destinos" class="exploreway-navlink">Destinos</a>
                     <a href="/cliente/reservas" class="exploreway-navlink">Mis reservas</a>
                 </Authorized>
-                <NotAuthorized Context="_nocli">
-                    <a href="/cliente/destinos" class="exploreway-navlink">Destinos</a>
-                </NotAuthorized>
             </AuthorizeView>
-            <a href="/#nosotros" class="exploreway-navlink" data-section-link="nosotros">Nosotros</a>
+            <a href="/nosotros" class="exploreway-navlink">Nosotros</a>
             <span class="exploreway-nav-pill" aria-hidden="true"></span>
         </nav>
 
@@ -162,11 +160,12 @@
                 Inicio
             </MudNavLink>
 
+            <MudNavLink Href="/explorar" Icon="@Icons.Material.Filled.Landscape" OnClick="@CloseDrawer">
+                Destinos
+            </MudNavLink>
+
             <AuthorizeView Roles="Cliente">
                 <Authorized Context="_cli">
-                    <MudNavLink Href="/cliente/destinos" Icon="@Icons.Material.Filled.Landscape" OnClick="@CloseDrawer">
-                        Destinos
-                    </MudNavLink>
                     <MudNavLink Href="/cliente/reservas" Icon="@Icons.Material.Filled.History" OnClick="@CloseDrawer">
                         Mis reservas
                     </MudNavLink>
@@ -177,15 +176,10 @@
                         Editar perfil y foto
                     </MudNavLink>
                 </Authorized>
-                <NotAuthorized Context="_nocli">
-                    <MudNavLink Href="/cliente/destinos" Icon="@Icons.Material.Filled.Landscape" OnClick="@CloseDrawer">
-                        Destinos
-                    </MudNavLink>
-                </NotAuthorized>
             </AuthorizeView>
 
-            <MudNavLink Href="#nosotros" Icon="@Icons.Material.Filled.Groups" OnClick="@CloseDrawer">
-                Sobre Nosotros
+            <MudNavLink Href="/nosotros" Icon="@Icons.Material.Filled.Groups" OnClick="@CloseDrawer">
+                Nosotros
             </MudNavLink>
         </MudNavMenu>
 
@@ -290,8 +284,8 @@
                     </MudText>
                     <ul class="exploreway-footer-links">
                         <li><a href="#inicio">Inicio</a></li>
-                        <li><a href="/cliente/destinos">Destinos</a></li>
-                        <li><a href="#nosotros">Sobre Nosotros</a></li>
+                        <li><a href="/explorar">Destinos</a></li>
+                        <li><a href="/nosotros">Nosotros</a></li>
                     </ul>
                 </MudItem>
 
@@ -343,6 +337,7 @@
             </div>
         </MudContainer>
     </footer>
+<AvisoCookies />
 </MudLayout>
 
 @code {

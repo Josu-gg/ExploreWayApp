@@ -1,7 +1,8 @@
+@page "/explorar"
 @page "/cliente/destinos"
 
 @using System.Globalization
-@using ExploreWayApp.Components.Compartidos
+@using ExploreWayApp.Auth
 @using ExploreWayApp.DTOs.Destino
 @using ExploreWayApp.DTOs.DestinoActividad
 @using ExploreWayApp.Excepciones
@@ -12,125 +13,175 @@
 @inject IDestinoService DestinoService
 @inject IDestinoActividadService DestinoActividadService
 @inject IImagenDestinoService ImagenService
+@inject SesionUsuario Sesion
 
 <PageTitle>Destinos — ExploreWay</PageTitle>
 
-<SoloCliente>
-    <div class="ew-cliente-page">
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
-            <header class="ew-admin-head">
-                <div>
-                    <span class="ew-admin-kicker">Catálogo · @Filtrados.Count() disponibles</span>
-                    <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Destinos</MudText>
-                    <MudText Typo="Typo.body1" Class="exploreway-section-lead">
-                        Explorá los lugares de ExploreWay y reservá tu próxima expedición.
-                    </MudText>
-                </div>
-                <MudTextField @bind-Value="_busqueda"
-                              Placeholder="Buscar por nombre o ubicación"
-                              Variant="Variant.Outlined"
-                              Margin="Margin.Dense"
-                              Adornment="Adornment.Start"
-                              AdornmentIcon="@Icons.Material.Filled.Search"
-                              AdornmentColor="Color.Primary"
-                              Immediate="true"
-                              Clearable="true"
-                              Style="max-width: 380px; background: #fff;" />
-            </header>
+<div class="ex-pagina">
+    <header class="ex-cabecera">
+        <div class="ex-contenedor">
+            <h1 class="ex-titulo">Destinos</h1>
+            <p class="ex-bajada">
+                Recorré los lugares que tenemos para vos. Mirá actividades, precios y guías sin necesidad de una cuenta.
+            </p>
 
+            <div class="ex-herramientas">
+                <div class="ex-buscar" role="search">
+                    <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small" />
+                    <input type="search" aria-label="Buscar destinos" placeholder="Buscar por nombre o lugar"
+                           value="@_busqueda" @oninput="e => _busqueda = e.Value?.ToString() ?? string.Empty" />
+                    @if (!string.IsNullOrEmpty(_busqueda))
+                    {
+                        <button type="button" aria-label="Borrar búsqueda" @onclick="() => _busqueda = string.Empty">
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small" />
+                        </button>
+                    }
+                </div>
+
+                @if (Departamentos.Count > 1)
+                {
+                    <div class="ex-filtros" role="group" aria-label="Filtrar por departamento">
+                        <button type="button" class="ex-chip" aria-pressed="@(_depto is null ? "true" : "false")" @onclick="() => _depto = null">Todos</button>
+                        @foreach (var dep in Departamentos)
+                        {
+                            var valor = dep;
+                            <button type="button" class="ex-chip" aria-pressed="@(_depto == valor ? "true" : "false")"
+                                    @onclick="() => _depto = (_depto == valor ? null : valor)">@valor</button>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </header>
+
+    <div class="ex-cuerpo">
+        <div class="ex-contenedor">
             @if (error is not null)
             {
-                <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;" ContentAlignment="HorizontalAlignment.Start">
-                    <div class="d-flex align-center justify-space-between flex-wrap gap-3">
-                        <span>@error</span>
-                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error" Class="text-none" OnClick="CargarAsync">Reintentar</MudButton>
-                    </div>
-                </MudAlert>
+                <div class="ex-aviso" role="alert">
+                    <span>@error</span>
+                    <button type="button" class="ex-btn ex-btn--linea ex-btn--sm" @onclick="CargarAsync">Reintentar</button>
+                </div>
             }
 
             @if (cargando)
             {
-                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                <div class="ex-grilla" aria-busy="true" aria-label="Cargando destinos">
+                    @for (var i = 0; i < 6; i++)
+                    {
+                        <div class="ex-esqueleto"></div>
+                    }
+                </div>
             }
             else if (!Filtrados.Any() && error is null)
             {
-                <div class="ew-cliente-vacio">
-                    <MudIcon Icon="@Icons.Material.Outlined.TravelExplore" Size="Size.Large" Style="color: var(--ew-teal);" />
-                    <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">
-                        @(_destinos.Count == 0 ? "Todavía no hay destinos disponibles" : "Sin resultados")
-                    </MudText>
-                    <MudText Typo="Typo.body2" Style="color: #64748b;">
-                        @(_destinos.Count == 0 ? "Volvé pronto: estamos preparando nuevas expediciones." : "Ningún destino coincide con tu búsqueda.")
-                    </MudText>
+                <div class="ex-vacio">
+                    <MudIcon Icon="@Icons.Material.Outlined.TravelExplore" Size="Size.Large" Style="color: var(--ew-green-ink);" />
+                    <h2>@(_destinos.Count == 0 ? "Todavía no hay destinos disponibles" : "No encontramos destinos con ese filtro")</h2>
+                    <p>@(_destinos.Count == 0 ? "Estamos preparando nuevas expediciones. Volvé pronto." : "Probá con otro nombre o quitá el filtro de departamento.")</p>
+                    @if (_destinos.Count > 0)
+                    {
+                        <button type="button" class="ex-btn ex-btn--primario" @onclick="LimpiarFiltros">Ver todos los destinos</button>
+                    }
                 </div>
             }
-            else
+            else if (Filtrados.Any())
             {
-                <div class="ew-dest-grid">
-                    @foreach (var d in Filtrados)
+                var lista = Filtrados.ToList();
+                var hayFiltro = !string.IsNullOrWhiteSpace(_busqueda) || _depto is not null;
+
+                <p class="ex-conteo" aria-live="polite">@lista.Count @(lista.Count == 1 ? "destino" : "destinos")</p>
+
+                <div class="ex-grilla">
+                    @for (var i = 0; i < lista.Count; i++)
                     {
-                        var ofertas = _ofertas.TryGetValue(d.IdDestino, out var lista) ? lista : [];
-                        <article class="ew-dest-card">
-                            <div class="ew-dest-media">
+                        var d = lista[i];
+                        var ofertas = _ofertas.TryGetValue(d.IdDestino, out var of) ? of : [];
+                        var destacada = i == 0 && !hayFiltro && lista.Count >= 4;
+                        <a class="ex-tarjeta @(destacada ? "ex-tarjeta--destacada" : "")" style="--i:@i" href="/explorar/@d.IdDestino">
+                            <div class="ex-tarjeta-media">
                                 @if (_imagenes.TryGetValue(d.IdDestino, out var url) && !string.IsNullOrWhiteSpace(url))
                                 {
-                                    <img src="@url" alt="@d.Nombre" loading="lazy" />
+                                    <img src="@url" alt="" loading="@(i < 3 ? "eager" : "lazy")" />
                                 }
                                 else
                                 {
                                     <MudIcon Icon="@Icons.Material.Outlined.Landscape" Size="Size.Large" />
                                 }
-                                <span class="ew-dest-ubic">
+                                <span class="ex-ubicacion">
                                     <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" />@Ubicacion(d)
                                 </span>
                             </div>
-                            <div class="ew-dest-body">
-                                <div class="ew-dest-nombre">@d.Nombre</div>
+                            <div class="ex-tarjeta-cuerpo">
+                                <h2 class="ex-tarjeta-nombre">@d.Nombre</h2>
                                 @if (!string.IsNullOrWhiteSpace(d.Descripcion))
                                 {
-                                    <div class="ew-dest-desc">@d.Descripcion</div>
+                                    <p class="ex-tarjeta-desc">@d.Descripcion</p>
                                 }
-                                <div class="ew-dest-meta">
-                                    <span>@ofertas.Count @(ofertas.Count == 1 ? "actividad" : "actividades")</span>
-                                    @if (ofertas.Count > 0)
-                                    {
-                                        <span>Desde <span class="ew-precio">@Precio(ofertas.Min(o => o.PrecioBase))</span></span>
-                                    }
-                                </div>
-                                <div class="ew-dest-foot">
-                                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="rounded-pill text-none flex-grow-1"
-                                               Href="@($"/cliente/destinos/{d.IdDestino}")">
-                                        Ver detalles
-                                    </MudButton>
-                                    <MudButton Variant="Variant.Filled" Class="rounded-pill text-none flex-grow-1 exploreway-btn-auth"
-                                               Disabled="@(ofertas.Count == 0)"
-                                               Href="@($"/cliente/reservar/{d.IdDestino}")">
-                                        Reservar
-                                    </MudButton>
+                                <div class="ex-tarjeta-pie">
+                                    <span class="ex-desde">
+                                        @if (ofertas.Count > 0)
+                                        {
+                                            <text>@ofertas.Count @(ofertas.Count == 1 ? "actividad" : "actividades") · desde <b>@Precio(ofertas.Min(o => o.PrecioBase))</b></text>
+                                        }
+                                        else
+                                        {
+                                            <text>Sin actividades por ahora</text>
+                                        }
+                                    </span>
+                                    <span class="ex-flecha" aria-hidden="true"><MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" /></span>
                                 </div>
                             </div>
-                        </article>
+                        </a>
                     }
                 </div>
             }
-        </MudContainer>
+
+            @if (!cargando && !Sesion.Autenticado)
+            {
+                <section class="ex-invitacion" aria-labelledby="ex-inv">
+                    <div>
+                        <h2 id="ex-inv">¿Ya elegiste tu próxima salida?</h2>
+                        <p>Explorar es libre. Para reservar una actividad con un guía necesitás una cuenta gratuita.</p>
+                    </div>
+                    <div class="ex-invitacion-acciones">
+                        <a class="ex-btn ex-btn--verde" href="/registro?returnUrl=%2Fexplorar">Crear cuenta</a>
+                        <a class="ex-btn ex-btn--claro" href="/login?returnUrl=%2Fexplorar">Iniciar sesión</a>
+                    </div>
+                </section>
+            }
+        </div>
     </div>
-</SoloCliente>
+</div>
 
 @code {
     private List<DestinoSalidaDto> _destinos = [];
     private Dictionary<int, List<DestinoActividadSalida>> _ofertas = [];
     private Dictionary<int, string?> _imagenes = [];
     private string _busqueda = string.Empty;
+    private string? _depto;
     private bool cargando = true;
     private string? error;
 
+    private List<string> Departamentos => _destinos
+        .Select(d => d.Departamento)
+        .Where(d => !string.IsNullOrWhiteSpace(d))
+        .Distinct()
+        .OrderBy(d => d)
+        .ToList();
+
     private IEnumerable<DestinoSalidaDto> Filtrados => _destinos.Where(d =>
-        string.IsNullOrWhiteSpace(_busqueda) ||
-        Contiene(d.Nombre) || Contiene(d.Departamento) || Contiene(d.Municipio));
+        (_depto is null || d.Departamento == _depto) &&
+        (string.IsNullOrWhiteSpace(_busqueda) || Contiene(d.Nombre) || Contiene(d.Departamento) || Contiene(d.Municipio)));
 
     private bool Contiene(string? texto) =>
         texto?.Contains(_busqueda.Trim(), StringComparison.OrdinalIgnoreCase) == true;
+
+    private void LimpiarFiltros()
+    {
+        _busqueda = string.Empty;
+        _depto = null;
+    }
 
     private static bool Activo(string? estado) =>
         string.Equals(estado?.Trim(), "Activo", StringComparison.OrdinalIgnoreCase);
@@ -154,10 +205,22 @@
                 .OrderBy(d => d.Nombre)
                 .ToList();
 
-            _ofertas = (await DestinoActividadService.ListarAsync())
-                .Where(o => Activo(o.NombreEstado))
-                .GroupBy(o => o.IdDestino)
-                .ToDictionary(g => g.Key, g => g.ToList());
+            // Las actividades (conteo y precio "desde") son un extra: si un destino no las devuelve, se muestra igual.
+            var ofertas = await Task.WhenAll(_destinos.Select(async d =>
+            {
+                try
+                {
+                    var lista = (await DestinoActividadService.ListarPorDestinoAsync(d.IdDestino))
+                        .Where(o => Activo(o.NombreEstado))
+                        .ToList();
+                    return (d.IdDestino, Lista: lista);
+                }
+                catch (Exception ex) when (ex is ApiException or HttpRequestException)
+                {
+                    return (d.IdDestino, Lista: new List<DestinoActividadSalida>());
+                }
+            }));
+            _ofertas = ofertas.ToDictionary(o => o.IdDestino, o => o.Lista);
 
             var principales = await Task.WhenAll(_destinos.Select(async d =>
             {

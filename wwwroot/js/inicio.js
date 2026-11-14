@@ -131,8 +131,9 @@ window.ewInicio = (function () {
 
     raiz.classList.add('ew-js');
     construirPaisaje(raiz);
+    const cine = iniciarVideo(raiz, reducir);
 
-    const capas = Array.from(raiz.querySelectorAll('.ew-capa, .ew-luna'));
+    const capas = Array.from(raiz.querySelectorAll('.ew-capa, .ew-luna, .ew-cine'));
     const cuerpoHero = raiz.querySelector('.ew-hero-cuerpo');
     const hero = raiz.querySelector('.ew-hero');
     const anclas = Array.from(raiz.querySelectorAll('[data-alt]'));
@@ -252,11 +253,43 @@ window.ewInicio = (function () {
 
     pintar();
 
-    estado = { raiz: raiz, pedir: pedir, alMouse: alMouse, obs: obs };
+    estado = { raiz: raiz, pedir: pedir, alMouse: alMouse, obs: obs, cine: cine };
+  }
+
+  // Video del hero: se pausa fuera de pantalla (ahorra batería y CPU) y no se
+  // reproduce con movimiento reducido.
+  function iniciarVideo(raiz, reducir) {
+    const video = raiz.querySelector('#ew-cine-video');
+    if (!video) return null;
+    let visible = true;
+
+    function sincronizar() {
+      const reproducir = visible && !reducir;
+      if (reproducir && video.paused) { const p = video.play(); if (p && p.catch) p.catch(function () {}); }
+      if (!reproducir && !video.paused) video.pause();
+    }
+
+    function listo() { raiz.classList.add('ew-cine-listo'); }
+    if (video.readyState >= 3) listo(); else video.addEventListener('canplay', listo, { once: true });
+
+    let obs = null;
+    if ('IntersectionObserver' in window) {
+      obs = new IntersectionObserver(function (e) { visible = e[0].isIntersecting; sincronizar(); }, { threshold: 0.05 });
+      obs.observe(video);
+    }
+    sincronizar();
+
+    return {
+      dispose: function () {
+        if (obs) obs.disconnect();
+        video.pause();
+      }
+    };
   }
 
   function dispose() {
     if (!estado) return;
+    if (estado.cine) estado.cine.dispose();
     window.removeEventListener('scroll', estado.pedir);
     window.removeEventListener('resize', estado.pedir);
     window.removeEventListener('mousemove', estado.alMouse);

@@ -1146,3 +1146,105 @@ body.ew-en-inicio .exploreway-main-content {
     line-height: 1.4;
     color: rgba(234, 246, 245, 0.55);
 }
+
+/* ==========================================================================
+   HERO CINEMATOGRÁFICO — video de fondo
+   Orden de capas: video (1) → grado de color + viñeta → grano → texto (3)
+   → fundido inferior (4) → ruta (5) → franjas de cine (6).
+   ========================================================================== */
+.ew-cine {
+    position: absolute;
+    inset: -2%;
+    will-change: translate;
+}
+
+.ew-cine-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    /* Un poco de contraste y color devuelve la nitidez que el códec le quita. */
+    filter: contrast(1.06) saturate(1.12);
+    opacity: 0;
+    scale: 1.12;
+    transition:
+        opacity 1.4s var(--ew-ease),
+        scale 6s cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Acercamiento lento que termina en escala 1: el video acaba en su resolución nativa. */
+.ew-cine-listo .ew-cine-video { opacity: 1; scale: 1; }
+
+/* Grado de color: oscurece arriba (navbar) y abajo (se funde con el bosque) y viñeta lateral. */
+.ew-cine-grado {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 120% 90% at 50% 45%, transparent 45%, rgba(5, 10, 24, 0.55) 100%),
+        linear-gradient(to bottom, rgba(5, 10, 24, 0.7) 0%, rgba(5, 10, 24, 0.15) 28%, rgba(5, 10, 24, 0.1) 55%, rgba(4, 21, 23, 0.85) 100%),
+        linear-gradient(90deg, rgba(5, 10, 24, 0.55), transparent 55%);
+}
+
+/* Grano de película: disimula la compresión y da textura de cine. */
+.ew-cine-grano {
+    position: absolute;
+    inset: -50%;
+    opacity: 0.11;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: ew-grano 0.9s steps(6) infinite;
+}
+
+@keyframes ew-grano {
+    0% { translate: 0 0; }
+    20% { translate: -4% 3%; }
+    40% { translate: 3% -5%; }
+    60% { translate: -2% 6%; }
+    80% { translate: 5% -2%; }
+    100% { translate: 0 0; }
+}
+
+/* Franjas de cine: cubren la pantalla al cargar y se abren como un telón. */
+.ew-cine-franja {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 6;
+    height: 50.5%;
+    background: #03060f;
+    pointer-events: none;
+    transition: scale 1.5s cubic-bezier(0.7, 0, 0.2, 1) 0.15s;
+}
+
+.ew-cine-franja--arriba { top: 0; transform-origin: top; }
+.ew-cine-franja--abajo { bottom: 0; transform-origin: bottom; }
+.ew-hero .ew-cine-franja { scale: 1 0; }
+.ew-pre .ew-cine-franja { scale: 1 1; }
+
+/* Fundido inferior: une el video con el inicio de la sección siguiente (#041517). */
+.ew-cine-fundido {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 4;
+    height: 45%;
+    background: linear-gradient(to bottom,
+        rgba(4, 21, 23, 0) 0%,
+        rgba(4, 21, 23, 0.35) 35%,
+        rgba(4, 21, 23, 0.8) 70%,
+        #041517 100%);
+    pointer-events: none;
+}
+
+/* Sobre el video, el titular necesita sombra para leerse en cualquier cuadro. */
+.ew-hero .ew-titular { text-shadow: 0 4px 40px rgba(5, 10, 24, 0.55); }
+
+@media (prefers-reduced-motion: reduce) {
+    .ew-cine-video { scale: 1; transition: opacity 0.6s ease-out; }
+    .ew-cine-grano { animation: none; }
+    .ew-hero .ew-cine-franja,
+    .ew-pre .ew-cine-franja { display: none; }
+}

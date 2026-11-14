@@ -17,10 +17,12 @@
 @using ExploreWayApp.Servicios.Guia
 @using ExploreWayApp.Servicios.GuiaActividad
 @using ExploreWayApp.Servicios.GuiaDestino
+@using ExploreWayApp.Servicios.ImagenDestino
 @using ExploreWayApp.Servicios.Reserva
 
 @inject IDestinoService DestinoService
 @inject IDestinoActividadService DestinoActividadService
+@inject IImagenDestinoService ImagenService
 @inject IGuiaService GuiaService
 @inject IGuiaDestinoService GuiaDestinoService
 @inject IGuiaActividadService GuiaActividadService
@@ -29,242 +31,387 @@
 @inject IClienteService ClienteService
 @inject NavigationManager Navegacion
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 <PageTitle>Reservar — ExploreWay</PageTitle>
 
 <SoloCliente>
-    <div class="ew-cliente-page">
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
-            <header class="ew-admin-head">
-                <div>
-                    <span class="ew-admin-kicker">Nueva reserva</span>
-                    <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">Reservá tu expedición</MudText>
-                    <MudText Typo="Typo.body1" Class="exploreway-section-lead">
-                        Elegí el destino, la actividad, tu guía y el horario que mejor te quede.
-                    </MudText>
-                </div>
-            </header>
-
-            @if (error is not null)
+    <div class="ex-pagina ex-pagina--asistente">
+        @* Portada: toma la foto del destino elegido, así la reserva siempre muestra a dónde vas. *@
+        <header class="ex-reserva-portada">
+            @if (Destino is { } dPortada && _imagenes.TryGetValue(dPortada.IdDestino, out var urlPortada) && !string.IsNullOrWhiteSpace(urlPortada))
             {
-                <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;" ContentAlignment="HorizontalAlignment.Start">
-                    <div class="d-flex align-center justify-space-between flex-wrap gap-3">
-                        <span>@error</span>
-                        @if (_cliente is null)
-                        {
-                            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error" Class="text-none" OnClick="CargarAsync">Reintentar</MudButton>
-                        }
-                    </div>
-                </MudAlert>
+                <img class="ex-reserva-portada-img" @key="dPortada.IdDestino" src="@urlPortada" alt="" />
             }
+            <div class="ex-contenedor ex-reserva-portada-texto">
+                <h1 class="ex-titulo">@(Destino is null ? "Reservá tu expedición" : $"Tu salida a {Destino.Nombre}")</h1>
+                @if (Destino is not null)
+                {
+                    <p class="ex-hero-ubic"><MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" /> @Ubicacion(Destino)</p>
+                }
+                else
+                {
+                    <p class="ex-bajada">Cinco pasos cortos. Podés volver a cambiar cualquier respuesta antes de confirmar.</p>
+                }
+            </div>
+        </header>
+
+        <div class="ex-contenedor ex-reserva-cuerpo">
 
             @if (cargando)
             {
-                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                <div class="ex-cargando" aria-busy="true"><span class="ex-giro" aria-hidden="true"></span> Preparando tu reserva…</div>
             }
-            else if (_cliente is not null)
+            else if (_cliente is null)
             {
-                <div class="ew-reserva-layout">
-                    <div>
-                        @* 1 · DESTINO *@
-                        <section class="ew-paso">
-                            <div class="ew-paso-titulo"><span class="ew-paso-num">1</span> Destino</div>
-                            <MudSelect T="int?" Label="Destino" Variant="Variant.Outlined" Margin="Margin.Dense"
-                                       AnchorOrigin="Origin.BottomCenter"
-                                       Value="_idDestino" ValueChanged="AlElegirDestino">
-                                @foreach (var d in _destinos)
-                                {
-                                    <MudSelectItem T="int?" Value="@d.IdDestino">@d.Nombre</MudSelectItem>
-                                }
-                            </MudSelect>
-                        </section>
+                <div class="ex-aviso" role="alert">
+                    <span>@(error ?? "No pudimos cargar tu perfil de cliente.")</span>
+                    <button type="button" class="ex-btn ex-btn--linea ex-btn--sm" @onclick="CargarAsync">Reintentar</button>
+                </div>
+            }
+            else
+            {
+                <div class="ex-asistente">
+                    @* Progreso móvil *@
+                    <div class="ex-progreso-movil">
+                        <p><span>@_etiquetas[_paso - 1]</span><strong>Paso @_paso de 5</strong></p>
+                        <div class="ex-progreso-barras" aria-hidden="true">
+                            @for (var i = 1; i <= 5; i++)
+                            {
+                                <i class="@(i <= _paso ? "on" : "")"></i>
+                            }
+                        </div>
+                    </div>
 
-                        @* 2 · ACTIVIDAD *@
-                        @if (_idDestino is not null)
+                    @* Sendero: el recorrido y cada respuesta *@
+                    <div class="ex-asistente-lado">
+                    <ol class="ex-sendero" aria-label="Pasos de la reserva">
+                        @for (var n = 1; n <= 5; n++)
                         {
-                            <section class="ew-paso">
-                                <div class="ew-paso-titulo"><span class="ew-paso-num">2</span> Actividad</div>
-                                @if (OfertasDelDestino.Count == 0)
-                                {
-                                    <MudText Typo="Typo.body2" Style="color: #64748b;">Este destino no tiene actividades disponibles por ahora.</MudText>
-                                }
-                                else
-                                {
-                                    <MudSelect T="int?" Label="Actividad" Variant="Variant.Outlined" Margin="Margin.Dense"
-                                               AnchorOrigin="Origin.BottomCenter"
-                                               Value="_idOferta" ValueChanged="AlElegirOferta">
-                                        @foreach (var o in OfertasDelDestino)
+                            var paso = n;
+                            var estado = paso == _paso ? "actual" : Completo(paso) ? "hecho" : "pendiente";
+                            var valor = ValorDelPaso(paso);
+                            <li class="ex-punto" data-estado="@estado" aria-current="@(paso == _paso ? "step" : null)">
+                                <button type="button" class="ex-punto-btn" disabled="@(!Alcanzable(paso) || paso == _paso)" @onclick="() => IrA(paso)">
+                                    <span class="ex-nodo" aria-hidden="true">
+                                        @if (estado == "hecho")
                                         {
-                                            <MudSelectItem T="int?" Value="@o.IdDestinoActividad">
-                                                @($"{o.NombreActividad} · {Duracion(o.DuracionMinutos)} · {Precio(o.PrecioBase)} por persona")
-                                            </MudSelectItem>
+                                            <MudIcon Icon="@Icons.Material.Filled.Check" />
                                         }
-                                    </MudSelect>
-                                    @if (!string.IsNullOrWhiteSpace(Oferta?.DescripcionActividad))
-                                    {
-                                        <MudText Typo="Typo.caption" Class="mt-2 d-block" Style="color: #64748b;">@Oferta.DescripcionActividad</MudText>
-                                    }
-                                }
-                            </section>
+                                        else
+                                        {
+                                            @paso
+                                        }
+                                    </span>
+                                    <span class="ex-punto-texto">
+                                        <span class="ex-punto-etiqueta">@_etiquetas[paso - 1]</span>
+                                        @if (valor is not null)
+                                        {
+                                            <span class="ex-punto-valor">@valor</span>
+                                        }
+                                    </span>
+                                </button>
+                            </li>
                         }
+                        <li class="ex-sendero-total" style="list-style:none;">
+                            <span>@_personas @(_personas == 1 ? "persona" : "personas")</span>
+                            <strong>@Precio(Total)</strong>
+                        </li>
+                    </ol>
 
-                        @* 3 · GUÍA *@
-                        @if (Oferta is not null)
+                    <aside class="ex-como" aria-labelledby="ex-como-h">
+                        <h2 id="ex-como-h">Cómo funciona tu reserva</h2>
+                        <ul>
+                            <li>
+                                <span class="ex-como-icono" aria-hidden="true"><MudIcon Icon="@Icons.Material.Outlined.EventAvailable" Size="Size.Small" /></span>
+                                <span><strong>Horarios reales.</strong> Solo ves los días y horas en que tu guía está libre.</span>
+                            </li>
+                            <li>
+                                <span class="ex-como-icono" aria-hidden="true"><MudIcon Icon="@Icons.Material.Outlined.HowToReg" Size="Size.Small" /></span>
+                                <span><strong>El guía confirma.</strong> Tu reserva queda pendiente hasta que la acepte.</span>
+                            </li>
+                            <li>
+                                <span class="ex-como-icono" aria-hidden="true"><MudIcon Icon="@Icons.Material.Outlined.EventBusy" Size="Size.Small" /></span>
+                                <span><strong>Sin compromiso.</strong> Podés cancelarla desde <a href="/cliente/reservas">Mis reservas</a>.</span>
+                            </li>
+                        </ul>
+                    </aside>
+                    </div>
+
+                    <section id="ex-panel" class="ex-paso-panel" @key="_paso" aria-labelledby="ex-paso-h">
+                        @switch (_paso)
                         {
-                            <section class="ew-paso">
-                                <div class="ew-paso-titulo"><span class="ew-paso-num">3</span> Guía</div>
-                                @if (_cargandoGuias)
+                            case 1:
+                                <h2 id="ex-paso-h" class="ex-paso-titulo">¿A dónde querés ir?</h2>
+                                <p class="ex-paso-guia">Elegí el destino de tu salida.</p>
+                                @if (_destinos.Count == 0)
                                 {
-                                    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
-                                }
-                                else if (_guiasElegibles.Count == 0)
-                                {
-                                    <MudText Typo="Typo.body2" Style="color: #64748b;">
-                                        Todavía no hay guías disponibles para esta actividad en este destino.
-                                    </MudText>
+                                    <p class="ex-nota">Todavía no hay destinos disponibles para reservar.</p>
                                 }
                                 else
                                 {
-                                    <div class="d-flex flex-column gap-2">
-                                        @foreach (var g in _guiasElegibles)
+                                    <div class="ex-opciones ex-opciones--imagen">
+                                        @foreach (var d in _destinos)
                                         {
-                                            var idGuia = g.IdGuia;
-                                            <button type="button" class="ew-guia-opcion @(idGuia == _idGuia ? "activa" : "")"
-                                                    @onclick="() => AlElegirGuiaAsync(idGuia)">
-                                                <MudAvatar Color="Color.Primary" Size="Size.Medium">
-                                                    @if (!string.IsNullOrWhiteSpace(g.Foto))
+                                            var idD = d.IdDestino;
+                                            var sel = idD == _idDestino;
+                                            <button type="button" class="ex-opcion ex-opcion--imagen" aria-pressed="@(sel ? "true" : "false")"
+                                                    @onclick="() => AlElegirDestino(idD)">
+                                                <span class="ex-opcion-foto">
+                                                    @if (_imagenes.TryGetValue(idD, out var url) && !string.IsNullOrWhiteSpace(url))
                                                     {
-                                                        <img src="@g.Foto" alt="@NombreGuia(g)" style="width:100%;height:100%;object-fit:cover;" />
+                                                        <img src="@url" alt="" loading="lazy" />
                                                     }
                                                     else
                                                     {
-                                                        @Iniciales(NombreGuia(g))
+                                                        <MudIcon Icon="@Icons.Material.Outlined.Landscape" Size="Size.Large" />
                                                     }
-                                                </MudAvatar>
-                                                <div style="min-width: 0; flex: 1;">
-                                                    <div class="font-weight-bold">@NombreGuia(g)</div>
-                                                    <MudText Typo="Typo.caption" Style="color: #64748b;">
-                                                        ★ @((g.CalificacionPromedio ?? 0).ToString("0.0", CultureInfo.InvariantCulture))
-                                                        @(g.PrimerosAuxilios ? " · Primeros auxilios" : "")
-                                                    </MudText>
-                                                </div>
-                                                @if (idGuia == _idGuia)
-                                                {
-                                                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Primary" />
-                                                }
+                                                </span>
+                                                <span class="ex-opcion-texto">
+                                                    <span class="ex-opcion-nombre">@d.Nombre</span>
+                                                    <span class="ex-opcion-sub">@Ubicacion(d)</span>
+                                                </span>
+                                                <span class="ex-opcion-marca" aria-hidden="true"><MudIcon Icon="@Icons.Material.Filled.Check" /></span>
                                             </button>
                                         }
                                     </div>
                                 }
-                            </section>
-                        }
+                                break;
 
-                        @* 4 · FECHA Y HORA *@
-                        @if (_idGuia is not null)
-                        {
-                            <section class="ew-paso">
-                                <div class="ew-paso-titulo"><span class="ew-paso-num">4</span> Fecha y hora</div>
-                                @if (_cargandoDisponibilidad)
+                            case 2:
+                                <h2 id="ex-paso-h" class="ex-paso-titulo">¿Qué querés hacer en @(Destino?.Nombre ?? "este destino")?</h2>
+                                <p class="ex-paso-guia">Cada actividad tiene su duración y su precio por persona.</p>
+                                @if (OfertasDelDestino.Count == 0)
                                 {
-                                    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
-                                }
-                                else if (_disponibilidad.Count == 0)
-                                {
-                                    <MudText Typo="Typo.body2" Style="color: #64748b;">
-                                        Este guía no tiene horarios disponibles por ahora. Probá con otro guía.
-                                    </MudText>
+                                    <p class="ex-nota">Este destino no tiene actividades disponibles por ahora. Probá con otro destino.</p>
                                 }
                                 else
                                 {
-                                    <MudGrid Spacing="2">
-                                        <MudItem xs="12" sm="6">
-                                            <MudDatePicker Label="Fecha del recorrido"
-                                                           Variant="Variant.Outlined"
-                                                           Margin="Margin.Dense"
-                                                           DateFormat="dd/MM/yyyy"
-                                                           MinDate="DateTime.Today"
-                                                           IsDateDisabledFunc="FechaNoDisponible"
-                                                           Date="_fecha" DateChanged="AlElegirFecha" />
-                                        </MudItem>
-                                        <MudItem xs="12" sm="6">
-                                            <MudSelect T="TimeOnly?" Label="Hora de inicio" Variant="Variant.Outlined" Margin="Margin.Dense"
-                                                       AnchorOrigin="Origin.BottomCenter"
-                                                       Disabled="@(_fecha is null || HorasDisponibles.Count == 0)"
-                                                       Value="_hora" ValueChanged="@(v => _hora = v)">
-                                                @foreach (var h in HorasDisponibles)
-                                                {
-                                                    <MudSelectItem T="TimeOnly?" Value="@((TimeOnly?)h)">
-                                                        @($"{h:HH:mm} – {h.AddMinutes(Oferta!.DuracionMinutos):HH:mm}")
-                                                    </MudSelectItem>
-                                                }
-                                            </MudSelect>
-                                        </MudItem>
-                                    </MudGrid>
-                                    <MudText Typo="Typo.caption" Class="mt-2 d-block" Style="color: #64748b;">
-                                        Solo se habilitan los días y horarios en los que el guía está disponible.
-                                    </MudText>
-                                    @if (_fecha is not null && HorasDisponibles.Count == 0)
+                                    <div class="ex-opciones ex-opciones--actividad-lista">
+                                        @foreach (var o in OfertasDelDestino)
+                                        {
+                                            var idO = o.IdDestinoActividad;
+                                            var nGuias = ElegiblesPara(o).Count;
+                                            <button type="button" class="ex-opcion ex-opcion--actividad" aria-pressed="@(idO == _idOferta ? "true" : "false")"
+                                                    disabled="@(nGuias == 0)" @onclick="() => AlElegirOferta(idO)">
+                                                <span class="ex-opcion-texto">
+                                                    <span class="ex-opcion-nombre">@o.NombreActividad</span>
+                                                    @if (!string.IsNullOrWhiteSpace(o.DescripcionActividad))
+                                                    {
+                                                        <span class="ex-opcion-desc">@o.DescripcionActividad</span>
+                                                    }
+                                                    <span class="ex-etiquetas">
+                                                        <span class="ex-etiqueta"><MudIcon Icon="@Icons.Material.Outlined.Schedule" Size="Size.Small" />@Duracion(o.DuracionMinutos)</span>
+                                                        @if (!string.IsNullOrWhiteSpace(o.Dificultad))
+                                                        {
+                                                            <span class="ex-etiqueta"><MudIcon Icon="@Icons.Material.Outlined.Terrain" Size="Size.Small" />@o.Dificultad</span>
+                                                        }
+                                                        <span class="ex-etiqueta @(nGuias == 0 ? "ex-etiqueta--aviso" : "ex-etiqueta--ok")">
+                                                            <MudIcon Icon="@Icons.Material.Outlined.Badge" Size="Size.Small" />@(nGuias == 0 ? "Sin guías disponibles por ahora" : nGuias == 1 ? "1 guía disponible" : $"{nGuias} guías disponibles")
+                                                        </span>
+                                                    </span>
+                                                </span>
+                                                <span class="ex-opcion-precio">@Precio(o.PrecioBase)<small>por persona</small></span>
+                                                <span class="ex-opcion-marca" aria-hidden="true"><MudIcon Icon="@Icons.Material.Filled.Check" /></span>
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                                break;
+
+                            case 3:
+                                <h2 id="ex-paso-h" class="ex-paso-titulo">Elegí a tu guía</h2>
+                                <p class="ex-paso-guia">Guías de @(Destino?.Nombre) que realizan @(Oferta?.NombreActividad), ordenados por calificación.</p>
+                                @if (_guiasElegibles.Count == 0)
+                                {
+                                    <div class="ex-nota">
+                                        <strong>Todavía no hay guías para esta actividad.</strong>
+                                        Un guía aparece acá cuando atiende @(Destino?.Nombre), está disponible y tiene asignada @(Oferta?.NombreActividad).
+                                    </div>
+                                    @if (GuiasSoloDestino.Count > 0)
                                     {
-                                        <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3" Style="border-radius: 12px;">
-                                            La actividad dura @Duracion(Oferta!.DuracionMinutos) y no entra en los horarios libres de ese día.
-                                        </MudAlert>
+                                        <h3 class="ex-subtitulo">Atienden @(Destino?.Nombre) pero aún no realizan esta actividad</h3>
+                                        <div class="ex-guias">
+                                            @foreach (var g in GuiasSoloDestino)
+                                            {
+                                                var nombre = NombreGuia(g);
+                                                <span class="ex-guia-etiqueta"><span class="ex-avatar" aria-hidden="true">@Iniciales(nombre)</span>@nombre</span>
+                                            }
+                                        </div>
+                                    }
+                                    <div style="margin-top:1.25rem;">
+                                        <button type="button" class="ex-btn ex-btn--primario ex-btn--sm" @onclick="() => IrA(2)">Elegir otra actividad</button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="ex-opciones ex-opciones--guia">
+                                        @foreach (var g in _guiasElegibles)
+                                        {
+                                            var idG = g.IdGuia;
+                                            var nombre = NombreGuia(g);
+                                            <button type="button" class="ex-opcion ex-opcion--guia" aria-pressed="@(idG == _idGuia ? "true" : "false")"
+                                                    @onclick="() => AlElegirGuiaAsync(idG)">
+                                                <span class="ex-avatar">
+                                                    @if (!string.IsNullOrWhiteSpace(g.Foto))
+                                                    {
+                                                        <img src="@g.Foto" alt="" />
+                                                    }
+                                                    else
+                                                    {
+                                                        @Iniciales(nombre)
+                                                    }
+                                                </span>
+                                                <span class="ex-opcion-texto">
+                                                    <span class="ex-opcion-nombre">@nombre</span>
+                                                    <span class="ex-opcion-sub">
+                                                        <span class="ex-estrella">★ @((g.CalificacionPromedio ?? 0).ToString("0.0", CultureInfo.InvariantCulture))</span>
+                                                        @(g.PrimerosAuxilios ? " · Primeros auxilios" : "")
+                                                    </span>
+                                                    @if (!string.IsNullOrWhiteSpace(g.Experiencia ?? g.Biografia))
+                                                    {
+                                                        <span class="ex-opcion-desc ex-recorte">@(g.Experiencia ?? g.Biografia)</span>
+                                                    }
+                                                </span>
+                                                <span class="ex-opcion-marca" aria-hidden="true"><MudIcon Icon="@Icons.Material.Filled.Check" /></span>
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                                break;
+
+                            case 4:
+                                <h2 id="ex-paso-h" class="ex-paso-titulo">¿Cuándo?</h2>
+                                <p class="ex-paso-guia">Solo aparecen los días y horarios en los que @(GuiaElegido is null ? "el guía" : NombreGuia(GuiaElegido)) está libre.</p>
+                                @if (_cargandoDisponibilidad)
+                                {
+                                    <div class="ex-cargando" aria-busy="true"><span class="ex-giro" aria-hidden="true"></span> Cargando horarios…</div>
+                                }
+                                else if (DiasDisponibles.Count == 0)
+                                {
+                                    <p class="ex-nota">Este guía no tiene horarios disponibles para esta actividad. Probá con otro guía.</p>
+                                }
+                                else
+                                {
+                                    <h3 class="ex-subtitulo">Día</h3>
+                                    <div class="ex-dias" role="group" aria-label="Días disponibles">
+                                        @foreach (var dia in DiasDisponibles)
+                                        {
+                                            var d = dia;
+                                            <button type="button" class="ex-dia" aria-pressed="@(d == _dia ? "true" : "false")"
+                                                    aria-label="@($"{_diasLargos[(int)d.DayOfWeek]} {d.Day} de {_meses[d.Month - 1]}")"
+                                                    @onclick="() => AlElegirDia(d)">
+                                                <span>@_diasCortos[(int)d.DayOfWeek]</span>
+                                                <b>@d.Day</b>
+                                                <span>@_meses[d.Month - 1]</span>
+                                            </button>
+                                        }
+                                    </div>
+
+                                    @if (_dia is not null)
+                                    {
+                                        <h3 class="ex-subtitulo">Hora de inicio</h3>
+                                        <div class="ex-horas" role="group" aria-label="Horas de inicio">
+                                            @foreach (var h in HorasDe(_dia.Value))
+                                            {
+                                                var hh = h;
+                                                <button type="button" class="ex-hora" aria-pressed="@(hh == _hora ? "true" : "false")"
+                                                        @onclick="() => _hora = hh">
+                                                    @($"{hh:HH:mm} – {hh.AddMinutes(Oferta!.DuracionMinutos):HH:mm}")
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <p class="ex-campo-ayuda">Elegí un día para ver las horas.</p>
                                     }
                                 }
-                            </section>
+                                break;
+
+                            case 5:
+                                <h2 id="ex-paso-h" class="ex-paso-titulo">Último detalle</h2>
+                                <p class="ex-paso-guia">Contanos cuántos son y revisá que todo esté bien.</p>
+
+                                <div class="ex-final">
+                                    <div>
+                                        <div class="ex-campo">
+                                            <span class="ex-campo-etiqueta" id="ex-pers-l">Personas</span>
+                                            <div class="ex-contador" role="group" aria-labelledby="ex-pers-l">
+                                                <button type="button" aria-label="Quitar una persona" disabled="@(_personas <= 1)" @onclick="() => _personas--">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Remove" Size="Size.Small" />
+                                                </button>
+                                                <output aria-live="polite">@_personas</output>
+                                                <button type="button" aria-label="Agregar una persona" disabled="@(_personas >= 100)" @onclick="() => _personas++">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="ex-campo" style="margin-bottom:0;">
+                                            <label for="ex-obs">Observaciones <span style="font-weight:400;color:#475569;">(opcional)</span></label>
+                                            <textarea id="ex-obs" class="ex-area" maxlength="500" placeholder="Alergias, movilidad reducida, ocasión especial…"
+                                                      @bind="_observaciones" @bind:event="oninput"></textarea>
+                                            <div class="ex-campo-ayuda">@(_observaciones?.Length ?? 0) / 500</div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <dl class="ex-repaso">
+                                            <div><dt>Destino</dt><dd>@Destino?.Nombre</dd></div>
+                                            <div><dt>Actividad</dt><dd>@Oferta?.NombreActividad · @(Oferta is null ? "" : Duracion(Oferta.DuracionMinutos))</dd></div>
+                                            <div><dt>Guía</dt><dd>@(GuiaElegido is null ? "—" : NombreGuia(GuiaElegido))</dd></div>
+                                            <div><dt>Fecha</dt><dd>@(_dia is null ? "—" : FechaLarga(_dia.Value))</dd></div>
+                                            <div><dt>Horario</dt><dd>@(_hora is null || Oferta is null ? "—" : $"{_hora:HH:mm} – {_hora.Value.AddMinutes(Oferta.DuracionMinutos):HH:mm}")</dd></div>
+                                        </dl>
+
+                                        <div class="ex-total">
+                                            <span>Total por @_personas @(_personas == 1 ? "persona" : "personas")</span>
+                                            <strong>@Precio(Total)</strong>
+                                        </div>
+
+                                        @if (error is not null)
+                                        {
+                                            <div class="ex-aviso" role="alert"><span>@error</span></div>
+                                        }
+
+                                        <button type="button" class="ex-btn ex-btn--verde ex-btn--bloque" style="min-height:52px;font-size:1.05rem;"
+                                                disabled="@(!PuedeReservar || guardando)" @onclick="ReservarAsync">
+                                            @if (guardando)
+                                            {
+                                                <span class="ex-giro" style="border-color:rgba(255,255,255,.35);border-top-color:#fff;" aria-hidden="true"></span>
+                                            }
+                                            @(guardando ? "Reservando…" : "Confirmar reserva")
+                                        </button>
+                                        <p class="ex-leyenda">Tu reserva queda pendiente hasta que el guía la acepte. Podés cancelarla desde “Mis reservas”.</p>
+                                    </div>
+                                </div>
+                                break;
                         }
 
-                        @* 5 · DETALLES *@
-                        @if (_hora is not null)
+                        @if (error is not null && _paso != 5)
                         {
-                            <section class="ew-paso">
-                                <div class="ew-paso-titulo"><span class="ew-paso-num">5</span> Detalles</div>
-                                <MudGrid Spacing="2">
-                                    <MudItem xs="12" sm="4">
-                                        <MudNumericField T="int" Label="Personas" Variant="Variant.Outlined" Margin="Margin.Dense"
-                                                         Min="1" Max="100" @bind-Value="_personas" />
-                                    </MudItem>
-                                    <MudItem xs="12">
-                                        <MudTextField T="string" Label="Observaciones (opcional)" Variant="Variant.Outlined" Margin="Margin.Dense"
-                                                      Lines="3" Counter="500" MaxLength="500" @bind-Value="_observaciones" />
-                                    </MudItem>
-                                </MudGrid>
-                            </section>
+                            <div class="ex-aviso" role="alert" style="margin-top:1.25rem;"><span>@error</span></div>
                         }
-                    </div>
 
-                    @* RESUMEN *@
-                    <aside class="ew-resumen">
-                        <MudText Typo="Typo.h6" Class="font-weight-bold mb-2">Resumen</MudText>
-                        <div class="ew-resumen-linea"><span>Destino</span><strong>@(Destino?.Nombre ?? "—")</strong></div>
-                        <div class="ew-resumen-linea"><span>Actividad</span><strong>@(Oferta?.NombreActividad ?? "—")</strong></div>
-                        <div class="ew-resumen-linea"><span>Guía</span><strong>@(GuiaElegido is null ? "—" : NombreGuia(GuiaElegido))</strong></div>
-                        <div class="ew-resumen-linea"><span>Fecha</span><strong>@(_fecha?.ToString("dd/MM/yyyy") ?? "—")</strong></div>
-                        <div class="ew-resumen-linea">
-                            <span>Horario</span>
-                            <strong>@(_hora is null || Oferta is null ? "—" : $"{_hora:HH:mm} – {_hora.Value.AddMinutes(Oferta.DuracionMinutos):HH:mm}")</strong>
-                        </div>
-                        <div class="ew-resumen-linea"><span>Personas</span><strong>@_personas</strong></div>
-                        <div class="ew-resumen-total">
-                            <span>Total</span>
-                            <span class="ew-precio" style="font-size: 1.4rem;">@Precio(Total)</span>
-                        </div>
-                        <MudButton Variant="Variant.Filled" FullWidth="true" Size="Size.Large"
-                                   Class="rounded-pill mt-4 py-3 text-none exploreway-btn-auth"
-                                   Disabled="@(!PuedeReservar || guardando)"
-                                   OnClick="ReservarAsync">
-                            @if (guardando)
-                            {
-                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="color: #ffffff;" />
-                            }
-                            @(guardando ? "Reservando…" : "Confirmar reserva")
-                        </MudButton>
-                        <MudText Typo="Typo.caption" Class="mt-3 d-block" Style="color: #64748b;">
-                            Tu reserva quedará pendiente hasta que el guía la acepte. Podés cancelarla desde “Mis reservas”.
-                        </MudText>
-                    </aside>
+                        @if (_paso > 1)
+                        {
+                            <div class="ex-navegacion">
+                                <button type="button" class="ex-btn ex-btn--linea" @onclick="() => IrA(_paso - 1)">
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" /> Atrás
+                                </button>
+                                @if (_paso < 5)
+                                {
+                                    <button type="button" class="ex-btn ex-btn--primario" disabled="@(!Completo(_paso))" @onclick="() => IrA(_paso + 1)">
+                                        Continuar <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" />
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </section>
                 </div>
             }
-        </MudContainer>
+        </div>
     </div>
 </SoloCliente>
 
@@ -274,25 +421,61 @@
     // Permite llegar con la actividad ya elegida: /cliente/reservar/3?actividad=7
     [SupplyParameterFromQuery(Name = "actividad")] public int? IdActividadInicial { get; set; }
 
+    private static readonly string[] _etiquetas = ["Destino", "Actividad", "Guía", "Fecha y hora", "Detalles"];
+    private static readonly string[] _diasCortos = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+    private static readonly string[] _diasLargos = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+    private static readonly string[] _meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
     private ClienteSalida? _cliente;
     private List<DestinoSalidaDto> _destinos = [];
     private List<DestinoActividadSalida> _ofertas = [];
+    private Dictionary<int, string?> _imagenes = [];
     private List<GuiaSalida> _guias = [];
     private List<ExploreWayApp.DTOs.GuiaDestino.GuiaDestinoSalida> _guiaDestinos = [];
     private List<ExploreWayApp.DTOs.GuiaActividad.GuiaActividadSalida> _guiaActividades = [];
     private List<GuiaSalida> _guiasElegibles = [];
+
+    // Guías activos y disponibles que atienden el destino (aunque aún no tengan la actividad asignada).
+    private List<GuiaSalida> GuiasQueAtienden(int idDestino)
+    {
+        var ids = _guiaDestinos
+            .Where(x => x.IdDestino == idDestino && Activo(x.NombreEstado))
+            .Select(x => x.IdGuia)
+            .ToHashSet();
+
+        return _guias.Where(g => Activo(g.NombreEstado) && g.EstadoDisponibilidad && ids.Contains(g.IdGuia)).ToList();
+    }
+
+    // Elegible = atiende el destino Y realiza la actividad (la API rechaza la reserva si falta alguna).
+    private List<GuiaSalida> ElegiblesPara(DestinoActividadSalida oferta)
+    {
+        var hacenLaActividad = _guiaActividades
+            .Where(x => x.IdActividad == oferta.IdActividad && Activo(x.NombreEstado))
+            .Select(x => x.IdGuia)
+            .ToHashSet();
+
+        return GuiasQueAtienden(oferta.IdDestino)
+            .Where(g => hacenLaActividad.Contains(g.IdGuia))
+            .OrderByDescending(g => g.CalificacionPromedio ?? 0)
+            .ThenBy(NombreGuia)
+            .ToList();
+    }
+
+    private List<GuiaSalida> GuiasSoloDestino =>
+        Oferta is null ? [] : GuiasQueAtienden(Oferta.IdDestino).Except(_guiasElegibles).OrderBy(NombreGuia).ToList();
     private List<DisponibilidadGuiaSalida> _disponibilidad = [];
 
+    private int _paso = 1;
+    private bool _scrollPendiente;
     private int? _idDestino;
     private int? _idOferta;
     private int? _idGuia;
-    private DateTime? _fecha;
+    private DateOnly? _dia;
     private TimeOnly? _hora;
     private int _personas = 1;
     private string? _observaciones;
 
     private bool cargando = true;
-    private bool _cargandoGuias;
     private bool _cargandoDisponibilidad;
     private bool guardando;
     private string? error;
@@ -305,32 +488,73 @@
 
     private bool PuedeReservar =>
         _cliente is not null && Oferta is not null && _idGuia is not null &&
-        _fecha is not null && _hora is not null && _personas >= 1;
+        _dia is not null && _hora is not null && _personas >= 1;
+
+    private bool Completo(int paso) => paso switch
+    {
+        1 => _idDestino is not null,
+        2 => Oferta is not null,
+        3 => _idGuia is not null,
+        4 => _dia is not null && _hora is not null,
+        5 => PuedeReservar,
+        _ => false
+    };
+
+    // Un paso es alcanzable si todos los anteriores están completos.
+    private bool Alcanzable(int paso)
+    {
+        for (var k = 1; k < paso; k++)
+            if (!Completo(k)) return false;
+        return true;
+    }
+
+    private string? ValorDelPaso(int paso) => paso switch
+    {
+        1 => Destino?.Nombre,
+        2 => Oferta?.NombreActividad,
+        3 => GuiaElegido is null ? null : NombreGuia(GuiaElegido),
+        4 => _dia is null || _hora is null || Oferta is null ? null : $"{FechaCorta(_dia.Value)} · {_hora:HH:mm}",
+        5 => Completo(4) && _paso >= 5 ? $"{_personas} {(_personas == 1 ? "persona" : "personas")}" : null,
+        _ => null
+    };
 
     // Horas de inicio posibles: cada 30 min dentro de las franjas del guía para ese día,
     // de modo que la actividad termine antes del cierre de la franja.
-    private List<TimeOnly> HorasDisponibles
+    private List<TimeOnly> HorasDe(DateOnly dia)
+    {
+        if (Oferta is null) return [];
+
+        var duracion = TimeSpan.FromMinutes(Oferta.DuracionMinutos);
+        var ahora = TimeOnly.FromDateTime(DateTime.Now);
+        var hoy = DateOnly.FromDateTime(DateTime.Today);
+        var horas = new SortedSet<TimeOnly>();
+
+        foreach (var franja in _disponibilidad.Where(f => f.Fecha == dia))
+        {
+            for (var t = franja.HoraInicio.ToTimeSpan(); t + duracion <= franja.HoraFin.ToTimeSpan(); t += TimeSpan.FromMinutes(30))
+            {
+                var hora = TimeOnly.FromTimeSpan(t);
+                if (dia == hoy && hora <= ahora) continue;
+                horas.Add(hora);
+            }
+        }
+
+        return horas.ToList();
+    }
+
+    private List<DateOnly> DiasDisponibles
     {
         get
         {
-            if (_fecha is null || Oferta is null) return [];
-
-            var dia = DateOnly.FromDateTime(_fecha.Value);
-            var duracion = TimeSpan.FromMinutes(Oferta.DuracionMinutos);
-            var ahora = TimeOnly.FromDateTime(DateTime.Now);
-            var horas = new SortedSet<TimeOnly>();
-
-            foreach (var franja in _disponibilidad.Where(f => f.Fecha == dia))
-            {
-                for (var t = franja.HoraInicio.ToTimeSpan(); t + duracion <= franja.HoraFin.ToTimeSpan(); t += TimeSpan.FromMinutes(30))
-                {
-                    var hora = TimeOnly.FromTimeSpan(t);
-                    if (dia == DateOnly.FromDateTime(DateTime.Today) && hora <= ahora) continue;
-                    horas.Add(hora);
-                }
-            }
-
-            return horas.ToList();
+            var hoy = DateOnly.FromDateTime(DateTime.Today);
+            return _disponibilidad
+                .Select(f => f.Fecha)
+                .Where(f => f >= hoy)
+                .Distinct()
+                .Where(f => HorasDe(f).Count > 0)
+                .OrderBy(f => f)
+                .Take(60)
+                .ToList();
         }
     }
 
@@ -341,6 +565,9 @@
 
     private static string NombreGuia(GuiaSalida g) => $"{g.NombrePersona} {g.ApellidoPersona}".Trim();
 
+    private static string Ubicacion(DestinoSalidaDto d) =>
+        string.IsNullOrWhiteSpace(d.Municipio) ? d.Departamento : $"{d.Municipio}, {d.Departamento}";
+
     private static string Iniciales(string nombre) =>
         string.Concat(nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpper(p[0])));
 
@@ -349,10 +576,20 @@
         : minutos % 60 == 0 ? $"{minutos / 60} h"
         : $"{minutos / 60} h {minutos % 60} min";
 
-    private bool FechaNoDisponible(DateTime fecha) =>
-        !_disponibilidad.Any(f => f.Fecha == DateOnly.FromDateTime(fecha));
+    private static string FechaCorta(DateOnly f) => $"{_diasCortos[(int)f.DayOfWeek]} {f.Day} {_meses[f.Month - 1]}";
+
+    private static string FechaLarga(DateOnly f) => $"{_diasLargos[(int)f.DayOfWeek]} {f.Day} de {_meses[f.Month - 1]}";
 
     protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_scrollPendiente) return;
+        _scrollPendiente = false;
+        try { await JS.InvokeVoidAsync("exploreWayJs.scrollSiHaceFalta", "ex-panel"); }
+        catch (JSException) { /* sin scroll: no es crítico */ }
+        catch (InvalidOperationException) { /* prerender */ }
+    }
 
     private async Task CargarAsync()
     {
@@ -373,13 +610,40 @@
                 .OrderBy(o => o.NombreActividad)
                 .ToList();
 
+            var principales = await Task.WhenAll(_destinos.Select(async d =>
+            {
+                try
+                {
+                    var imagenes = await ImagenService.ListarPorDestinoAsync(d.IdDestino);
+                    return (d.IdDestino, Url: (imagenes.FirstOrDefault(i => i.EsPrincipal) ?? imagenes.FirstOrDefault())?.UrlImagen);
+                }
+                catch (Exception ex) when (ex is ApiException or HttpRequestException)
+                {
+                    return (d.IdDestino, Url: (string?)null);
+                }
+            }));
+            _imagenes = principales.ToDictionary(p => p.IdDestino, p => p.Url);
+
+            _guias = await GuiaService.ListarAsync();
+            _guiaDestinos = await GuiaDestinoService.ListarAsync();
+            _guiaActividades = await GuiaActividadService.ListarAsync();
+
+            // Si llega con destino (y actividad) elegidos, el asistente arranca en el primer paso pendiente.
             if (IdDestino is not null && _destinos.Any(d => d.IdDestino == IdDestino))
             {
                 _idDestino = IdDestino;
+                _paso = 2;
                 if (IdActividadInicial is not null && OfertasDelDestino.Any(o => o.IdDestinoActividad == IdActividadInicial))
                 {
                     _idOferta = IdActividadInicial;
-                    await CargarGuiasAsync();
+                    _paso = 3;
+                    _guiasElegibles = ElegiblesPara(Oferta!);
+                }
+                else if (OfertasDelDestino.Count == 1)
+                {
+                    _idOferta = OfertasDelDestino[0].IdDestinoActividad;
+                    _paso = 3;
+                    _guiasElegibles = ElegiblesPara(Oferta!);
                 }
             }
         }
@@ -397,78 +661,75 @@
         }
     }
 
-    private void AlElegirDestino(int? id)
+    private void IrA(int paso)
     {
-        _idDestino = id;
-        _idOferta = null;
-        ReiniciarDesdeGuia();
-        _guiasElegibles = [];
-        // Con una sola actividad se elige sola, para ahorrar un paso.
-        if (OfertasDelDestino.Count == 1) _ = AlElegirOferta(OfertasDelDestino[0].IdDestinoActividad);
+        if (paso < 1 || paso > 5 || paso == _paso || !Alcanzable(paso)) return;
+        error = null;
+        _paso = paso;
+        _scrollPendiente = true;
     }
 
-    private async Task AlElegirOferta(int? id)
+    private async Task AlElegirDestino(int id)
     {
-        _idOferta = id;
-        ReiniciarDesdeGuia();
-        await CargarGuiasAsync();
+        if (_idDestino != id)
+        {
+            _idDestino = id;
+            _idOferta = null;
+            ReiniciarDesdeGuia();
+            _guiasElegibles = [];
+        }
+
+        error = null;
+        _scrollPendiente = true;
+
+        // Con una sola actividad se elige sola, para ahorrar un paso.
+        if (_idOferta is null && OfertasDelDestino.Count == 1)
+        {
+            await AlElegirOferta(OfertasDelDestino[0].IdDestinoActividad);
+            return;
+        }
+
+        _paso = 2;
+    }
+
+    private async Task AlElegirOferta(int id)
+    {
+        if (_idOferta != id)
+        {
+            _idOferta = id;
+            ReiniciarDesdeGuia();
+            _guiasElegibles = [];
+        }
+
+        error = null;
+        _paso = 3;
+        _scrollPendiente = true;
+        if (Oferta is not null) _guiasElegibles = ElegiblesPara(Oferta);
     }
 
     private void ReiniciarDesdeGuia()
     {
         _idGuia = null;
         _disponibilidad = [];
-        _fecha = null;
+        _dia = null;
         _hora = null;
-    }
-
-    // Un guía es elegible si está activo y disponible, atiende el destino y realiza la actividad (asignaciones activas).
-    private async Task CargarGuiasAsync()
-    {
-        if (Oferta is null) return;
-
-        _cargandoGuias = true;
-        error = null;
-        StateHasChanged();
-
-        try
-        {
-            if (_guias.Count == 0) _guias = await GuiaService.ListarAsync();
-            if (_guiaDestinos.Count == 0) _guiaDestinos = await GuiaDestinoService.ListarAsync();
-            if (_guiaActividades.Count == 0) _guiaActividades = await GuiaActividadService.ListarAsync();
-
-            var delDestino = _guiaDestinos.Where(x => x.IdDestino == Oferta.IdDestino && Activo(x.NombreEstado)).Select(x => x.IdGuia).ToHashSet();
-            var deLaActividad = _guiaActividades.Where(x => x.IdActividad == Oferta.IdActividad && Activo(x.NombreEstado)).Select(x => x.IdGuia).ToHashSet();
-
-            _guiasElegibles = _guias
-                .Where(g => Activo(g.NombreEstado) && g.EstadoDisponibilidad
-                            && delDestino.Contains(g.IdGuia) && deLaActividad.Contains(g.IdGuia))
-                .OrderByDescending(g => g.CalificacionPromedio ?? 0)
-                .ThenBy(NombreGuia)
-                .ToList();
-        }
-        catch (ApiException ex)
-        {
-            error = ex.Message;
-        }
-        catch (HttpRequestException)
-        {
-            error = "No se pudo conectar con el servidor. Verificá tu conexión e intentá de nuevo.";
-        }
-        finally
-        {
-            _cargandoGuias = false;
-        }
     }
 
     private async Task AlElegirGuiaAsync(int idGuia)
     {
+        var cambio = _idGuia != idGuia;
         _idGuia = idGuia;
-        _fecha = null;
+        error = null;
+        _paso = 4;
+        _scrollPendiente = true;
+
+        if (!cambio && _disponibilidad.Count > 0) return;
+
+        _dia = null;
         _hora = null;
         _disponibilidad = [];
         _cargandoDisponibilidad = true;
-        error = null;
+        StateHasChanged();
 
         try
         {
@@ -488,10 +749,10 @@
         }
     }
 
-    private void AlElegirFecha(DateTime? fecha)
+    private void AlElegirDia(DateOnly dia)
     {
-        _fecha = fecha;
-        _hora = null;
+        if (_dia != dia) _hora = null;
+        _dia = dia;
     }
 
     private async Task ReservarAsync()
@@ -508,7 +769,7 @@
                 IdCliente = _cliente.IdCliente,
                 IdGuia = _idGuia,
                 IdDestinoActividad = Oferta.IdDestinoActividad,
-                FechaRecorrido = DateOnly.FromDateTime(_fecha!.Value),
+                FechaRecorrido = _dia!.Value,
                 HoraInicio = _hora,
                 CantidadPersonas = _personas,
                 Observaciones = string.IsNullOrWhiteSpace(_observaciones) ? null : _observaciones.Trim()

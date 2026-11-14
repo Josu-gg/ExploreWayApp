@@ -11,11 +11,11 @@ public static class RespuestaApi
     {
         if (respuesta.IsSuccessStatusCode) return;
 
-        var mensaje = await LeerMensajeAsync(respuesta);
+        var mensaje = await LeerMensajeAsync(respuesta, (int)respuesta.StatusCode);
         throw new ApiException((int)respuesta.StatusCode, mensaje);
     }
 
-    private static async Task<string> LeerMensajeAsync(HttpResponseMessage respuesta)
+    private static async Task<string> LeerMensajeAsync(HttpResponseMessage respuesta, int codigo)
     {
         try
         {
@@ -26,7 +26,13 @@ public static class RespuestaApi
         }
         catch (Exception) { /* la respuesta no era JSON */ }
 
-        return "Ocurrió un error al procesar la solicitud.";
+        // Spring Security responde 401/403 con el cuerpo vacío: se explica en lugar de mostrar un error genérico.
+        return codigo switch
+        {
+            401 => "Necesitás iniciar sesión para ver esta información.",
+            403 => "No tenés permiso para ver esta información.",
+            _ => "Ocurrió un error al procesar la solicitud."
+        };
     }
 
     private sealed class ErrorApi

@@ -146,7 +146,7 @@
 
             <MudText Typo="Typo.body1" Class="text-center" Style="color: #475569;">
                 ¿Todavía no tenés cuenta?
-                <MudLink Href="/registro" Class="exploreway-auth-link font-weight-bold">Registrate gratis</MudLink>
+                <MudLink Href="@RutaRegistro" Class="exploreway-auth-link font-weight-bold">Registrate gratis</MudLink>
             </MudText>
         </div>
     </main>
@@ -161,6 +161,9 @@
 
     // Si el cliente llegó desde "Reservar", vuelve a esa reserva. Solo se aceptan rutas internas.
     [SupplyParameterFromQuery(Name = "returnUrl")] public string? ReturnUrl { get; set; }
+
+    private string RutaRegistro =>
+        string.IsNullOrWhiteSpace(ReturnUrl) ? "/registro" : $"/registro?returnUrl={Uri.EscapeDataString(ReturnUrl)}";
 
     private string DestinoCliente() =>
         Sesion.EsCliente && !string.IsNullOrWhiteSpace(ReturnUrl) && ReturnUrl.StartsWith('/') && !ReturnUrl.StartsWith("//") && !ReturnUrl.Contains('\\')

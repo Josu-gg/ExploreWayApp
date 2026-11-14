@@ -4,27 +4,37 @@
 @inject SesionUsuario Sesion
 @inject NavigationManager Navegacion
 
-@* Restringe una vista al rol Cliente. Se muestra dentro del MainLayout. *@
+@* Restringe una vista al rol Cliente. Se muestra dentro del MainLayout.
+   Los invitados ven una invitación a crear cuenta o iniciar sesión y vuelven a esta misma página después. *@
 <AuthorizeView Roles="Cliente">
     <Authorized>
         @ChildContent
     </Authorized>
     <NotAuthorized>
-        <div class="ew-cliente-page">
-            <div class="ew-cliente-vacio">
-                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Style="color: var(--ew-primary);" />
-                @if (Sesion.Autenticado)
-                {
-                    <MudText Typo="Typo.h5" Class="font-weight-bold mt-3">Acceso restringido</MudText>
-                    <MudText Typo="Typo.body2" Class="mb-5" Style="color: #64748b;">Esta sección es solo para clientes.</MudText>
-                    <MudButton Variant="Variant.Filled" Href="/" Class="rounded-pill px-6 text-none exploreway-btn-auth">Volver al inicio</MudButton>
-                }
-                else
-                {
-                    <MudText Typo="Typo.h5" Class="font-weight-bold mt-3">Iniciá sesión para continuar</MudText>
-                    <MudText Typo="Typo.body2" Class="mb-5" Style="color: #64748b;">Necesitás una cuenta de cliente para ver esta sección.</MudText>
-                    <MudButton Variant="Variant.Filled" Href="@($"/login?returnUrl={Uri.EscapeDataString("/" + Navegacion.ToBaseRelativePath(Navegacion.Uri))}")" Class="rounded-pill px-6 text-none exploreway-btn-auth">Iniciar sesión</MudButton>
-                }
+        <div class="ex-pagina">
+            <div class="ex-contenedor" style="padding-top: 9rem; padding-bottom: 5rem;">
+                <div class="ex-puerta">
+                    @if (Sesion.Autenticado)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Style="color: var(--ew-green-ink);" />
+                        <h1>Esta sección es para clientes</h1>
+                        <p>Tu cuenta no tiene acceso a las reservas. Podés seguir explorando los destinos.</p>
+                        <div class="ex-puerta-acciones">
+                            <a class="ex-btn ex-btn--primario" href="/explorar">Ver destinos</a>
+                        </div>
+                    }
+                    else
+                    {
+                        var retorno = Uri.EscapeDataString("/" + Navegacion.ToBaseRelativePath(Navegacion.Uri));
+                        <MudIcon Icon="@Icons.Material.Filled.EventAvailable" Size="Size.Large" Style="color: var(--ew-green-ink);" />
+                        <h1>Creá tu cuenta para reservar</h1>
+                        <p>Es gratis y tarda un minuto. Después volvés justo acá para seguir con tu reserva.</p>
+                        <div class="ex-puerta-acciones">
+                            <a class="ex-btn ex-btn--verde" href="/registro?returnUrl=@retorno">Crear cuenta</a>
+                            <a class="ex-btn ex-btn--linea" href="/login?returnUrl=@retorno">Ya tengo cuenta</a>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     </NotAuthorized>

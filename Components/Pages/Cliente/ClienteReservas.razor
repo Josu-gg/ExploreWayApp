@@ -26,7 +26,7 @@
                     </MudText>
                 </div>
                 <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add"
-                           Class="rounded-pill px-6 py-2 text-none exploreway-btn-auth" Href="/cliente/destinos">
+                           Class="rounded-pill px-6 py-2 text-none exploreway-btn-auth" Href="/explorar">
                     Nueva reserva
                 </MudButton>
             </header>
@@ -65,7 +65,7 @@
                     </MudText>
                     @if (_reservas.Count == 0)
                     {
-                        <MudButton Variant="Variant.Filled" Href="/cliente/destinos" Class="rounded-pill px-6 text-none exploreway-btn-auth">Ver destinos</MudButton>
+                        <MudButton Variant="Variant.Filled" Href="/explorar" Class="rounded-pill px-6 text-none exploreway-btn-auth">Ver destinos</MudButton>
                     }
                 </div>
             }

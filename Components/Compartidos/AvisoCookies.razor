@@ -1,0 +1,50 @@
+@inject IJSRuntime JS
+
+@* Solo se muestra después de leer localStorage en el primer render interactivo: así no parpadea durante el prerender. *@
+@if (_visible)
+{
+    <section class="ck-aviso" role="region" aria-label="Aviso de cookies">
+        <p class="ck-texto">
+            Usamos cookies necesarias para mantener tu sesión iniciada y que el sitio funcione. No las usamos para publicidad.
+        </p>
+        <div class="ck-acciones">
+            <button type="button" class="ex-btn ex-btn--claro ex-btn--sm" @onclick='() => GuardarAsync("necesarias")'>Solo necesarias</button>
+            <button type="button" class="ex-btn ex-btn--verde ex-btn--sm" @onclick='() => GuardarAsync("aceptadas")'>Aceptar</button>
+        </div>
+    </section>
+}
+
+@code {
+    private bool _visible;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        try
+        {
+            var valor = await JS.InvokeAsync<string?>("exploreWayJs.leerConsentimientoCookies");
+            if (string.IsNullOrEmpty(valor))
+            {
+                _visible = true;
+                StateHasChanged();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // El circuito se cerró antes de responder: no hay nada que mostrar.
+        }
+    }
+
+    private async Task GuardarAsync(string valor)
+    {
+        _visible = false;
+        try
+        {
+            await JS.InvokeAsync<bool>("exploreWayJs.guardarConsentimientoCookies", valor);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+}

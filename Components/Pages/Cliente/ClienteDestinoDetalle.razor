@@ -1,7 +1,9 @@
+@page "/explorar/{IdDestino:int}"
 @page "/cliente/destinos/{IdDestino:int}"
+@implements IAsyncDisposable
 
 @using System.Globalization
-@using ExploreWayApp.Components.Compartidos
+@using ExploreWayApp.Auth
 @using ExploreWayApp.DTOs.Destino
 @using ExploreWayApp.DTOs.DestinoActividad
 @using ExploreWayApp.DTOs.GuiaDestino
@@ -16,147 +18,230 @@
 @inject IDestinoActividadService DestinoActividadService
 @inject IGuiaDestinoService GuiaDestinoService
 @inject IImagenDestinoService ImagenService
+@inject SesionUsuario Sesion
+@inject IJSRuntime JS
 
 <PageTitle>@(_destino?.Nombre ?? "Destino") — ExploreWay</PageTitle>
 
-<SoloCliente>
-    <div class="ew-cliente-page">
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="px-4 px-md-8">
-            <MudButton Href="/cliente/destinos" StartIcon="@Icons.Material.Filled.ArrowBack" Class="text-none mb-4" Color="Color.Primary">
-                Volver a destinos
-            </MudButton>
+<div class="ex-pagina">
+    @if (cargando)
+    {
+        <section class="ex-hero ex-esqueleto-escena" aria-busy="true" aria-label="Cargando destino">
+            <div class="ex-hero-capa">
+                <div class="ex-contenedor ex-hero-arriba">
+                    <a class="ex-volver" href="/explorar"><MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" /> Todos los destinos</a>
+                    <h1 class="ex-hero-nombre">Cargando…</h1>
+                </div>
+            </div>
+        </section>
+    }
+    else if (_destino is not null)
+    {
+        @* Galería a pantalla completa: la foto ocupa todo el ancho, se puede ampliar con un clic y avanza sola. *@
+        <section class="ex-hero" aria-roledescription="carrusel" aria-label="Fotos de @_destino.Nombre"
+                 @onkeydown="AlTeclear"
+                 @onmouseenter="() => Pausar(true)" @onmouseleave="() => Pausar(false)"
+                 @onfocusin="() => Pausar(true)" @onfocusout="() => Pausar(false)">
+
+            @if (ImagenActual is { } actual)
+            {
+                <button type="button" class="ex-hero-abrir" aria-label="Ampliar foto" @onclick="AbrirAmpliada">
+                    <img class="ex-hero-img" @key="actual.IdImagen" src="@actual.UrlImagen" alt="@(actual.Descripcion ?? _destino.Nombre)" />
+                </button>
+            }
+            else
+            {
+                <div class="ex-hero-sinfoto" aria-hidden="true">
+                    <MudIcon Icon="@Icons.Material.Outlined.Landscape" Size="Size.Large" />
+                </div>
+            }
+
+            <div class="ex-hero-capa">
+                <div class="ex-contenedor ex-hero-arriba">
+                    <a class="ex-volver" href="/explorar"><MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" /> Todos los destinos</a>
+                    <h1 class="ex-hero-nombre">@_destino.Nombre</h1>
+                    <p class="ex-hero-ubic"><MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" /> @Ubicacion</p>
+                </div>
+
+                <div class="ex-contenedor ex-hero-abajo">
+                    @if (_imagenes.Count > 1)
+                    {
+                        <div class="ex-hero-tiras @(_pausado ? "is-pausado" : "")" role="group" aria-label="Elegir foto">
+                            @for (var i = 0; i < _imagenes.Count; i++)
+                            {
+                                var idx = i;
+                                var img = _imagenes[i];
+                                var activa = idx == IndiceActual;
+                                <button type="button" class="ex-hero-tira" aria-label="Ver foto @(idx + 1)"
+                                        aria-current="@(activa ? "true" : "false")" @onclick="() => IrA(idx)">
+                                    <img src="@img.UrlImagen" alt="" loading="lazy" />
+                                    @if (activa)
+                                    {
+                                        <span class="ex-hero-progreso" @key="@($"p{_ciclo}")" style="animation-duration:@(Intervalo)ms" aria-hidden="true"></span>
+                                    }
+                                </button>
+                            }
+                        </div>
+                    }
+                    else if (_imagenes.Count == 0)
+                    {
+                        <span class="ex-gal-cuenta">Este destino todavía no tiene fotos.</span>
+                    }
+                    @if (_imagenes.Count > 0)
+                    {
+                        <span class="ex-hero-cuenta" aria-live="polite">
+                            <MudIcon Icon="@Icons.Material.Outlined.PhotoLibrary" Size="Size.Small" /> @(IndiceActual + 1) / @_imagenes.Count
+                        </span>
+                    }
+                </div>
+            </div>
+
+            @if (_imagenes.Count > 1)
+            {
+                <button type="button" class="ex-gal-flecha ex-gal-flecha--ant" aria-label="Foto anterior" @onclick="() => Ir(-1)">
+                    <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" />
+                </button>
+                <button type="button" class="ex-gal-flecha ex-gal-flecha--sig" aria-label="Foto siguiente" @onclick="() => Ir(1)">
+                    <MudIcon Icon="@Icons.Material.Filled.ChevronRight" />
+                </button>
+            }
+        </section>
+
+        <div class="ex-contenedor">
+            @if (ImagenActual is { Descripcion: { Length: > 0 } pie })
+            {
+                <p class="ex-gal-pie">@pie</p>
+            }
 
             @if (error is not null)
             {
-                <MudAlert Severity="Severity.Error" Class="mb-4" Style="border-radius: 12px;" ContentAlignment="HorizontalAlignment.Start">
-                    <div class="d-flex align-center justify-space-between flex-wrap gap-3">
-                        <span>@error</span>
-                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error" Class="text-none" OnClick="CargarAsync">Reintentar</MudButton>
-                    </div>
-                </MudAlert>
+                <div class="ex-aviso" role="alert" style="margin-top: 1.5rem;">
+                    <span>@error</span>
+                    <button type="button" class="ex-btn ex-btn--linea ex-btn--sm" @onclick="CargarAsync">Reintentar</button>
+                </div>
             }
 
-            @if (cargando)
-            {
-                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
-            }
-            else if (_destino is not null)
-            {
-                <header class="ew-admin-head">
-                    <div>
-                        <span class="ew-admin-kicker">
-                            <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" Style="vertical-align: -3px;" />
-                            @Ubicacion
-                        </span>
-                        <MudText Typo="Typo.h3" Class="font-weight-bold exploreway-section-title">@_destino.Nombre</MudText>
-                    </div>
-                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.EventAvailable"
-                               Class="rounded-pill px-6 py-2 text-none exploreway-btn-auth"
-                               Disabled="@(_ofertas.Count == 0)"
-                               Href="@($"/cliente/reservar/{_destino.IdDestino}")">
-                        Reservar
-                    </MudButton>
-                </header>
+            <div class="ex-detalle">
+                <div>
+                    <h2 class="ex-seccion-titulo">Acerca de este destino</h2>
+                    <p class="ex-texto">@(string.IsNullOrWhiteSpace(_destino.Descripcion) ? "Este destino todavía no tiene una descripción." : _destino.Descripcion)</p>
 
-                <div class="ew-detalle-grid">
-                    <div>
-                        <div class="ew-gal-main">
-                            @if (ImagenActual is not null)
+                    <h2 class="ex-seccion-titulo">Guías de este destino</h2>
+                    @if (_guias.Count > 0)
+                    {
+                        <div class="ex-guias">
+                            @foreach (var g in _guias)
                             {
-                                <img src="@ImagenActual.UrlImagen" alt="@(ImagenActual.Descripcion ?? _destino.Nombre)" />
-                            }
-                            else
-                            {
-                                <MudIcon Icon="@Icons.Material.Outlined.Landscape" Style="font-size: 4rem;" />
+                                var nombre = $"{g.NombreGuia} {g.ApellidoGuia}".Trim();
+                                <span class="ex-guia-etiqueta">
+                                    <span class="ex-avatar" aria-hidden="true">@Iniciales(nombre)</span>@nombre
+                                </span>
                             }
                         </div>
-                        @if (_imagenes.Count > 1)
-                        {
-                            <div class="ew-gal-thumbs">
-                                @foreach (var img in _imagenes)
-                                {
-                                    var idImg = img.IdImagen;
-                                    <button type="button" class="ew-gal-thumb @(idImg == ImagenActual?.IdImagen ? "activa" : "")"
-                                            aria-label="Ver imagen" @onclick="() => _idImagen = idImg">
-                                        <img src="@img.UrlImagen" alt="@(img.Descripcion ?? _destino.Nombre)" loading="lazy" />
-                                    </button>
-                                }
-                            </div>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(ImagenActual?.Descripcion))
-                        {
-                            <MudText Typo="Typo.caption" Class="mt-2 d-block" Style="color: #64748b;">@ImagenActual.Descripcion</MudText>
-                        }
+                    }
+                    else
+                    {
+                        <p class="ex-campo-ayuda" style="font-size: 0.95rem;">Todavía no hay guías disponibles en este destino.</p>
+                    }
+                </div>
 
-                        <MudText Typo="Typo.h6" Class="font-weight-bold mt-6 mb-2">Acerca de este destino</MudText>
-                        <MudText Typo="Typo.body1" Style="color: #475569; line-height: 1.7; white-space: pre-line;">
-                            @(string.IsNullOrWhiteSpace(_destino.Descripcion) ? "Este destino todavía no tiene una descripción." : _destino.Descripcion)
-                        </MudText>
-
-                        @if (_guias.Count > 0)
-                        {
-                            <MudText Typo="Typo.h6" Class="font-weight-bold mt-6 mb-2">Guías que lo atienden</MudText>
-                            <div class="d-flex flex-wrap gap-2">
-                                @foreach (var g in _guias)
-                                {
-                                    <MudChip T="string" Variant="Variant.Outlined" Color="Color.Primary" Icon="@Icons.Material.Filled.Badge">
-                                        @($"{g.NombreGuia} {g.ApellidoGuia}".Trim())
-                                    </MudChip>
-                                }
-                            </div>
-                        }
-                    </div>
-
-                    <div class="ew-panel">
-                        <div class="ew-panel-head">
-                            <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Actividades disponibles</MudText>
-                            <span class="ew-admin-kicker mb-0">@_ofertas.Count</span>
+                <aside class="ex-lateral" aria-labelledby="ex-act">
+                    <div class="ex-reserva-panel">
+                        <div class="ex-reserva-cabeza">
+                            <small id="ex-act">@(_ofertas.Count == 0 ? "Actividades" : _ofertas.Count == 1 ? "1 actividad desde" : $"{_ofertas.Count} actividades desde")</small>
+                            @if (_ofertas.Count > 0)
+                            {
+                                <strong>@Precio(_ofertas.Min(o => o.PrecioBase))</strong> <small style="display:inline;">por persona</small>
+                            }
                         </div>
+
                         @if (_ofertas.Count == 0)
                         {
-                            <div class="ew-panel-vacio">
-                                <MudIcon Icon="@Icons.Material.Outlined.EventBusy" Style="color: var(--ew-teal);" />
-                                <MudText Typo="Typo.body2" Style="color: #64748b;">Por ahora no hay actividades para reservar en este destino.</MudText>
-                            </div>
+                            <p class="ex-reserva-nota">Por ahora no hay actividades para reservar en este destino. Volvé pronto.</p>
                         }
+
                         @foreach (var o in _ofertas)
                         {
-                            <div class="ew-oferta">
-                                <div style="min-width: 0; flex: 1 1 180px;">
-                                    <div class="ew-oferta-nombre">@o.NombreActividad</div>
-                                    <div class="ew-oferta-info">
-                                        <span>@Duracion(o.DuracionMinutos)</span>
-                                        @if (!string.IsNullOrWhiteSpace(o.Dificultad)) { <span>Dificultad: @o.Dificultad</span> }
-                                        <span>por persona</span>
-                                    </div>
-                                    @if (!string.IsNullOrWhiteSpace(o.DescripcionActividad))
+                            <article class="ex-oferta">
+                                <div class="ex-oferta-fila">
+                                    <h3 class="ex-oferta-nombre">@o.NombreActividad</h3>
+                                    <span class="ex-oferta-precio">@Precio(o.PrecioBase)</span>
+                                </div>
+                                <div class="ex-oferta-info">
+                                    <span>@Duracion(o.DuracionMinutos)</span>
+                                    @if (!string.IsNullOrWhiteSpace(o.Dificultad))
                                     {
-                                        <MudText Typo="Typo.caption" Style="color: #64748b;">@o.DescripcionActividad</MudText>
+                                        <span>Dificultad @o.Dificultad.ToLowerInvariant()</span>
                                     }
                                 </div>
-                                <div class="d-flex align-center gap-3">
-                                    <span class="ew-precio">@Precio(o.PrecioBase)</span>
-                                    <MudButton Variant="Variant.Filled" Size="Size.Small" Class="rounded-pill text-none exploreway-btn-auth"
-                                               Href="@($"/cliente/reservar/{_destino.IdDestino}?actividad={o.IdDestinoActividad}")">
-                                        Reservar
-                                    </MudButton>
-                                </div>
-                            </div>
+                                @if (!string.IsNullOrWhiteSpace(o.DescripcionActividad))
+                                {
+                                    <p class="ex-oferta-desc">@o.DescripcionActividad</p>
+                                }
+                                <a class="ex-btn ex-btn--primario ex-btn--sm ex-btn--bloque"
+                                   href="/cliente/reservar/@_destino.IdDestino?actividad=@o.IdDestinoActividad">Reservar esta actividad</a>
+                            </article>
+                        }
+
+                        @if (!Sesion.Autenticado && _ofertas.Count > 0)
+                        {
+                            var retorno = Uri.EscapeDataString($"/cliente/reservar/{_destino.IdDestino}");
+                            <p class="ex-reserva-nota">
+                                Para reservar necesitás una cuenta gratuita.
+                                <a href="/registro?returnUrl=@retorno">Crear cuenta</a> o
+                                <a href="/login?returnUrl=@retorno">iniciar sesión</a>.
+                            </p>
                         }
                     </div>
-                </div>
-            }
-            else if (error is null)
-            {
-                <div class="ew-cliente-vacio">
-                    <MudIcon Icon="@Icons.Material.Outlined.SearchOff" Size="Size.Large" Style="color: var(--ew-teal);" />
-                    <MudText Typo="Typo.h6" Class="font-weight-bold mt-2">Destino no disponible</MudText>
-                    <MudText Typo="Typo.body2" Style="color: #64748b;">No encontramos el destino que buscás.</MudText>
-                </div>
-            }
-        </MudContainer>
-    </div>
-</SoloCliente>
+                </aside>
+            </div>
+        </div>
+
+        @if (_ampliada && ImagenActual is not null)
+        {
+            var foto = ImagenActual;
+            <div class="ex-lb" id="ex-lb" role="dialog" aria-modal="true" aria-label="Foto ampliada" tabindex="-1"
+                 @onkeydown="AlTeclearAmpliada" @onclick="CerrarAmpliada">
+                <button type="button" class="ex-lb-cerrar" aria-label="Cerrar" @onclick="CerrarAmpliada" @onclick:stopPropagation="true">
+                    <MudIcon Icon="@Icons.Material.Filled.Close" />
+                </button>
+
+                @if (_imagenes.Count > 1)
+                {
+                    <button type="button" class="ex-gal-flecha ex-gal-flecha--ant" aria-label="Foto anterior" @onclick="() => Ir(-1)" @onclick:stopPropagation="true">
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" />
+                    </button>
+                    <button type="button" class="ex-gal-flecha ex-gal-flecha--sig" aria-label="Foto siguiente" @onclick="() => Ir(1)" @onclick:stopPropagation="true">
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" />
+                    </button>
+                }
+
+                <img class="ex-lb-img" @key="foto.IdImagen" src="@foto.UrlImagen" alt="@(foto.Descripcion ?? _destino.Nombre)" @onclick:stopPropagation="true" />
+                <p class="ex-lb-pie">@(string.IsNullOrWhiteSpace(foto.Descripcion) ? "" : foto.Descripcion + " · ")@(IndiceActual + 1) / @_imagenes.Count</p>
+            </div>
+        }
+    }
+    else if (error is null)
+    {
+        <div class="ex-contenedor" style="padding-top: 9rem; padding-bottom: 5rem;">
+            <div class="ex-vacio">
+                <MudIcon Icon="@Icons.Material.Outlined.SearchOff" Size="Size.Large" Style="color: var(--ew-green-ink);" />
+                <h1 style="font-size: 1.25rem; font-weight: 700; margin: 0.5rem 0 0;">Este destino no está disponible</h1>
+                <p>Puede que ya no esté publicado o que el enlace sea incorrecto.</p>
+                <a class="ex-btn ex-btn--primario" href="/explorar">Ver todos los destinos</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="ex-contenedor" style="padding-top: 9rem; padding-bottom: 5rem;">
+            <div class="ex-aviso" role="alert">
+                <span>@error</span>
+                <button type="button" class="ex-btn ex-btn--linea ex-btn--sm" @onclick="CargarAsync">Reintentar</button>
+            </div>
+        </div>
+    }
+</div>
 
 @code {
     [Parameter] public int IdDestino { get; set; }
@@ -166,6 +251,8 @@
     private List<ImagenDestinoSalida> _imagenes = [];
     private List<GuiaDestinoSalida> _guias = [];
     private int? _idImagen;
+    private bool _ampliada;
+    private bool _enfocarAmpliada;
     private bool cargando = true;
     private string? error;
 
@@ -173,6 +260,8 @@
         _imagenes.FirstOrDefault(i => i.IdImagen == _idImagen)
         ?? _imagenes.FirstOrDefault(i => i.EsPrincipal)
         ?? _imagenes.FirstOrDefault();
+
+    private int IndiceActual => Math.Max(0, _imagenes.FindIndex(i => i.IdImagen == ImagenActual?.IdImagen));
 
     private string Ubicacion =>
         _destino is null ? string.Empty
@@ -183,10 +272,104 @@
 
     private static string Precio(decimal valor) => valor.ToString("C2", CultureInfo.GetCultureInfo("en-US"));
 
+    private static string Iniciales(string nombre) =>
+        string.Concat(nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpper(p[0])));
+
     private static string Duracion(int minutos) =>
         minutos < 60 ? $"{minutos} min"
         : minutos % 60 == 0 ? $"{minutos / 60} h"
         : $"{minutos / 60} h {minutos % 60} min";
+
+    // ---- Galería ----
+    private const int Intervalo = 5000;
+    private int _ciclo;
+    private bool _pausado;
+    private System.Threading.Timer? _timer;
+
+    private void Ir(int delta)
+    {
+        if (_imagenes.Count < 2) return;
+        IrA((IndiceActual + delta + _imagenes.Count) % _imagenes.Count);
+    }
+
+    private void IrA(int indice)
+    {
+        if (_imagenes.Count == 0) return;
+        _idImagen = _imagenes[indice].IdImagen;
+        ReiniciarTimer();
+    }
+
+    private void Pausar(bool pausar)
+    {
+        if (_pausado == pausar) return;
+        _pausado = pausar;
+        // Al reanudar arranca un ciclo completo, así la barra de progreso coincide con el timer.
+        ReiniciarTimer();
+    }
+
+    private void ReiniciarTimer()
+    {
+        _ciclo++;
+        _timer?.Dispose();
+        _timer = null;
+        if (_pausado || _ampliada || _imagenes.Count < 2) return;
+        _timer = new System.Threading.Timer(_ => InvokeAsync(() =>
+        {
+            Ir(1);
+            StateHasChanged();
+        }), null, Intervalo, Timeout.Infinite);
+    }
+
+    private void AlTeclear(KeyboardEventArgs e)
+    {
+        if (e.Key == "ArrowLeft") Ir(-1);
+        else if (e.Key == "ArrowRight") Ir(1);
+    }
+
+    private void AbrirAmpliada()
+    {
+        _ampliada = true;
+        _enfocarAmpliada = true;
+        ReiniciarTimer();
+    }
+
+    private async Task CerrarAmpliada()
+    {
+        _ampliada = false;
+        ReiniciarTimer();
+        await Desbloquear();
+    }
+
+    private async Task AlTeclearAmpliada(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") await CerrarAmpliada();
+        else if (e.Key == "ArrowLeft") Ir(-1);
+        else if (e.Key == "ArrowRight") Ir(1);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_enfocarAmpliada) return;
+        _enfocarAmpliada = false;
+        try
+        {
+            await JS.InvokeVoidAsync("exploreWayJs.bloquearScroll", true);
+            await JS.InvokeVoidAsync("exploreWayJs.enfocar", "ex-lb");
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { /* no es crítico */ }
+    }
+
+    private async Task Desbloquear()
+    {
+        try { await JS.InvokeVoidAsync("exploreWayJs.bloquearScroll", false); }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException) { }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _timer?.Dispose();
+        if (_ampliada) await Desbloquear();
+    }
 
     protected override async Task OnParametersSetAsync() => await CargarAsync();
 
@@ -196,6 +379,7 @@
         error = null;
         _destino = null;
         _idImagen = null;
+        _ampliada = false;
 
         try
         {
@@ -203,18 +387,31 @@
             if (destino is null || !Activo(destino.NombreEstado)) return;
             _destino = destino;
 
-            _ofertas = (await DestinoActividadService.ListarAsync())
-                .Where(o => o.IdDestino == IdDestino && Activo(o.NombreEstado))
-                .OrderBy(o => o.NombreActividad)
-                .ToList();
-
             _imagenes = (await ImagenService.ListarPorDestinoAsync(IdDestino))
                 .OrderByDescending(i => i.EsPrincipal)
                 .ToList();
 
-            _guias = (await GuiaDestinoService.ListarAsync())
-                .Where(g => g.IdDestino == IdDestino && Activo(g.NombreEstado))
-                .ToList();
+            try
+            {
+                _ofertas = (await DestinoActividadService.ListarPorDestinoAsync(IdDestino))
+                    .Where(o => Activo(o.NombreEstado))
+                    .OrderBy(o => o.NombreActividad)
+                    .ToList();
+            }
+            catch (Exception ex) when (ex is ApiException or HttpRequestException)
+            {
+                _ofertas = [];
+            }
+
+            // Los guías son un extra: si no se pueden leer, el destino se muestra igual.
+            try
+            {
+                _guias = await GuiaDestinoService.ListarPorDestinoAsync(IdDestino);
+            }
+            catch (Exception ex) when (ex is ApiException or HttpRequestException)
+            {
+                _guias = [];
+            }
         }
         catch (ApiException ex) when (ex.CodigoEstado == 404)
         {
@@ -231,6 +428,7 @@
         finally
         {
             cargando = false;
+            ReiniciarTimer();
         }
     }
 }

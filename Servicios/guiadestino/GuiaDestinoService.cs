@@ -13,6 +13,9 @@ public sealed class GuiaDestinoService(HttpClient http) : IGuiaDestinoService
     public async Task<List<GuiaDestinoSalida>> ListarPorGuiaAsync(int idGuia) =>
         await http.LeerAsync<List<GuiaDestinoSalida>>($"{Url}/guia/{idGuia}") ?? [];
 
+    public async Task<List<GuiaDestinoSalida>> ListarPorDestinoAsync(int idDestino) =>
+        await http.LeerAsync<List<GuiaDestinoSalida>>($"{Url}/destino/{idDestino}") ?? [];
+
     public Task<GuiaDestinoSalida?> CrearAsync(GuiaDestinoGuardar dto) =>
         http.EnviarAsync<GuiaDestinoSalida>(HttpMethod.Post, Url, dto);
 

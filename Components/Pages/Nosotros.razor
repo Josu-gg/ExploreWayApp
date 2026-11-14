@@ -1,0 +1,93 @@
+@page "/nosotros"
+
+@using ExploreWayApp.Auth
+
+@inject SesionUsuario Sesion
+
+<PageTitle>Nosotros — ExploreWay</PageTitle>
+
+<div class="ex-pagina">
+    <header class="ex-cabecera">
+        <div class="ex-contenedor">
+            <h1 class="ex-titulo">Nosotros</h1>
+            <p class="ex-bajada">
+                ExploreWay conecta a viajeros con guías locales. Elegí un destino, mirá qué actividades ofrece y reservá con alguien que conoce el lugar.
+            </p>
+        </div>
+    </header>
+
+    <div class="ex-cuerpo">
+        <div class="ex-contenedor">
+            <section class="ns-bloque ns-que" aria-labelledby="ns-que">
+                <h2 id="ns-que" class="ns-subtitulo">Qué es ExploreWay</h2>
+                <p>
+                    Es una plataforma de turismo para descubrir destinos y las actividades que se pueden hacer en cada uno.
+                    Cada actividad la acompaña un guía local, así que no reservás un paquete genérico: reservás una salida con una persona concreta.
+                </p>
+                <p>
+                    Podés recorrer los destinos, ver precios y guías sin crear una cuenta. La cuenta solo hace falta para reservar.
+                </p>
+            </section>
+
+            <section class="ns-bloque" aria-labelledby="ns-como">
+                <h2 id="ns-como" class="ns-subtitulo">Cómo funciona</h2>
+                <ol class="ns-pasos">
+                    <li class="ns-paso">
+                        <span class="ns-paso-num" aria-hidden="true">1</span>
+                        <h3>Explorá destinos</h3>
+                        <p>Buscá por nombre o filtrá por departamento y mirá qué ofrece cada lugar.</p>
+                    </li>
+                    <li class="ns-paso">
+                        <span class="ns-paso-num" aria-hidden="true">2</span>
+                        <h3>Elegí una actividad</h3>
+                        <p>Compará actividades y precios dentro del destino que te interesa.</p>
+                    </li>
+                    <li class="ns-paso">
+                        <span class="ns-paso-num" aria-hidden="true">3</span>
+                        <h3>Reservá con un guía</h3>
+                        <p>Elegí al guía y la fecha, y enviá tu reserva desde tu cuenta.</p>
+                    </li>
+                    <li class="ns-paso">
+                        <span class="ns-paso-num" aria-hidden="true">4</span>
+                        <h3>El guía confirma</h3>
+                        <p>El guía revisa tu solicitud y la confirma. Seguís el estado en Mis reservas.</p>
+                    </li>
+                </ol>
+            </section>
+
+            <section class="ns-bloque" aria-labelledby="ns-quien">
+                <h2 id="ns-quien" class="ns-subtitulo">Para quién es</h2>
+                <div class="ns-perfiles">
+                    <article class="ns-perfil">
+                        <MudIcon Icon="@Icons.Material.Outlined.Backpack" Class="ns-perfil-icono" />
+                        <h3>Viajeros</h3>
+                        <p>Para quienes quieren conocer un lugar de la mano de alguien que vive ahí, con la información clara antes de reservar.</p>
+                    </article>
+                    <article class="ns-perfil">
+                        <MudIcon Icon="@Icons.Material.Outlined.Badge" Class="ns-perfil-icono" />
+                        <h3>Guías locales</h3>
+                        <p>Para guías que ofrecen actividades en su destino y quieren recibir y confirmar reservas desde un solo panel.</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="ex-invitacion" aria-labelledby="ns-inv">
+                <div>
+                    <h2 id="ns-inv">Empezá por un destino</h2>
+                    <p>
+                        @(Sesion.Autenticado
+                            ? "Mirá los destinos disponibles y elegí tu próxima salida."
+                            : "Explorar es libre. Para reservar con un guía necesitás una cuenta gratuita.")
+                    </p>
+                </div>
+                <div class="ex-invitacion-acciones">
+                    <a class="ex-btn ex-btn--verde" href="/explorar">Ver destinos</a>
+                    @if (!Sesion.Autenticado)
+                    {
+                        <a class="ex-btn ex-btn--claro" href="/registro?returnUrl=%2Fexplorar">Crear cuenta</a>
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

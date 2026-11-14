@@ -1,0 +1,161 @@
+/* ==========================================================================
+   NOSOTROS (prefijo ns-) y AVISO DE COOKIES (prefijo ck-).
+   Reutiliza ex-* de explorar.css y los tokens --ew-* de exploreway.css.
+   ========================================================================== */
+
+/* ---------- Nosotros ---------- */
+.ns-bloque {
+    padding: 2rem;
+    border-radius: 24px;
+    background: #fff;
+    color: var(--ew-ink);
+    box-shadow: 0 0 0 1px var(--ew-line), 0 12px 32px -20px rgba(11, 19, 41, 0.25);
+}
+
+.ns-bloque + .ns-bloque { margin-top: 1.5rem; }
+
+.ns-subtitulo {
+    margin: 0 0 1rem;
+    font-family: 'Bricolage Grotesque', var(--ew-display);
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: var(--ew-ink);
+}
+
+.ns-bloque p {
+    margin: 0;
+    max-width: 44rem;
+    line-height: 1.7;
+    color: #334155;
+    text-wrap: pretty;
+}
+
+.ns-que p + p { margin-top: 0.75rem; }
+
+.ns-pasos {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ns-paso {
+    padding: 1.25rem;
+    border-radius: 16px;
+    background: var(--ew-paper);
+}
+
+.ns-paso-num {
+    display: inline-grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    margin-bottom: 0.75rem;
+    border-radius: 999px;
+    background: var(--ew-dark);
+    color: var(--ew-mint);
+    font-family: 'Bricolage Grotesque', var(--ew-display);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.ns-paso h3,
+.ns-perfil h3 {
+    margin: 0 0 0.35rem;
+    font-family: 'Bricolage Grotesque', var(--ew-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--ew-ink);
+}
+
+.ns-paso p,
+.ns-perfil p { font-size: 0.95rem; line-height: 1.6; }
+
+.ns-perfiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.ns-perfil {
+    padding: 1.25rem;
+    border-radius: 16px;
+    background: var(--ew-paper);
+}
+
+.ns-perfil .ns-perfil-icono {
+    margin-bottom: 0.5rem;
+    color: var(--ew-green-ink);
+}
+
+.ns-bloque + .ex-invitacion { margin-top: 1.5rem; }
+
+@media (max-width: 959.98px) {
+    .ns-pasos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 599.98px) {
+    .ns-bloque { padding: 1.25rem; border-radius: 20px; }
+    .ns-pasos, .ns-perfiles { grid-template-columns: 1fr; }
+    .ns-paso, .ns-perfil { padding: 1rem; }
+    .ex-invitacion { padding: 1.5rem 1.25rem; }
+}
+
+/* ---------- Aviso de cookies ----------
+   z-index sobre el contenido y el appbar (1300) pero debajo de los
+   diálogos de MudBlazor (1400) y el snackbar (1500). */
+.ck-aviso {
+    position: fixed;
+    left: 50%;
+    bottom: 1rem;
+    z-index: 1350;
+    display: flex;
+    align-items: center;
+    gap: 1rem 1.5rem;
+    width: min(760px, calc(100% - 2rem));
+    padding: 1rem 1rem 1rem 1.5rem;
+    border-radius: 20px;
+    background: var(--ew-dark);
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(91, 227, 194, 0.22), 0 18px 40px -16px rgba(11, 19, 41, 0.55);
+    translate: -50% 0;
+    animation: ck-entra 220ms ease-out both;
+}
+
+.ck-texto {
+    margin: 0;
+    flex: 1;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: rgba(226, 232, 240, 0.9);
+}
+
+.ck-acciones {
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.5rem;
+}
+
+@keyframes ck-entra {
+    from { opacity: 0; translate: -50% 12px; }
+    to { opacity: 1; translate: -50% 0; }
+}
+
+@media (max-width: 599.98px) {
+    .ck-aviso {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 1rem;
+    }
+    .ck-acciones .ex-btn { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ck-aviso { animation-name: ck-aparece; }
+}
+
+@keyframes ck-aparece { from { opacity: 0; } to { opacity: 1; } }
