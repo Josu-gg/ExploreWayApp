@@ -3,13 +3,17 @@
 @* Solo se muestra después de leer localStorage en el primer render interactivo: así no parpadea durante el prerender. *@
 @if (_visible)
 {
-    <section class="ck-aviso" role="region" aria-label="Aviso de cookies">
-        <p class="ck-texto">
-            Usamos cookies necesarias para mantener tu sesión iniciada y que el sitio funcione. No las usamos para publicidad.
-        </p>
+    <section class="ck-aviso" role="region" aria-labelledby="ck-titulo">
+        <span class="ck-icono" aria-hidden="true"><MudIcon Icon="@Icons.Material.Outlined.Cookie" /></span>
+        <div>
+            <h2 id="ck-titulo" class="ck-titulo">Cookies para tu sesión</h2>
+            <p class="ck-texto">
+                Usamos solo las cookies necesarias para mantener tu sesión iniciada y que el sitio funcione. No las usamos para publicidad.
+            </p>
+        </div>
         <div class="ck-acciones">
-            <button type="button" class="ex-btn ex-btn--claro ex-btn--sm" @onclick='() => GuardarAsync("necesarias")'>Solo necesarias</button>
-            <button type="button" class="ex-btn ex-btn--verde ex-btn--sm" @onclick='() => GuardarAsync("aceptadas")'>Aceptar</button>
+            <button type="button" class="ex-btn ex-btn--linea" @onclick='() => GuardarAsync("necesarias")'>Solo necesarias</button>
+            <button type="button" class="ex-btn ex-btn--aceptar" @onclick='() => GuardarAsync("aceptadas")'>Aceptar</button>
         </div>
     </section>
 }

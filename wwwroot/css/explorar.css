@@ -217,23 +217,24 @@ a.ex-btn:active { scale: 0.96; }
     color: #475569;
 }
 
+/* Todas las tarjetas miden lo mismo: la foto tiene proporción fija (4:3) sin importar
+   si la imagen original es alargada, y solo el pie se alinea abajo. */
 .ex-grilla {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
     gap: 1.5rem;
+    align-items: stretch;
 }
 
 @media (min-width: 1100px) {
-    .ex-grilla { grid-template-columns: repeat(3, 1fr); }
-    .ex-grilla > .ex-tarjeta--destacada { grid-column: span 2; }
-    .ex-grilla > .ex-tarjeta--destacada .ex-tarjeta-media { aspect-ratio: auto; height: 100%; min-height: 360px; }
-    .ex-grilla > .ex-tarjeta--destacada { grid-template-columns: 1.35fr 1fr; }
+    .ex-grilla { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* Tarjeta: un único enlace. Radio exterior 20 = interior 12 + 8 de inset. */
 .ex-tarjeta {
     display: grid;
     grid-template-rows: auto 1fr;
+    min-width: 0;
     padding: 8px;
     border-radius: 20px;
     background: #fff;
@@ -264,7 +265,11 @@ a.ex-btn:active { scale: 0.96; }
 
 .ex-tarjeta-media {
     position: relative;
+    width: 100%;
     aspect-ratio: 4 / 3;
+    min-height: 0;
+    max-height: 100%;
+    contain: size;
     border-radius: 12px;
     overflow: hidden;
     background: linear-gradient(135deg, var(--ew-dark), #14304d);
@@ -329,9 +334,11 @@ a.ex-btn:active { scale: 0.96; }
     letter-spacing: -0.02em;
     color: var(--ew-ink);
     text-wrap: balance;
+    overflow-wrap: anywhere;
 }
 
 .ex-tarjeta-desc {
+    overflow-wrap: anywhere;
     margin: 0;
     font-size: 0.93rem;
     line-height: 1.55;

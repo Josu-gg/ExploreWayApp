@@ -107,19 +107,25 @@
                         </MudPopover>
                     </div>
                 </div>
+                <button type="button" class="ew-avatar-movil d-flex d-sm-none" aria-label="Abrir menú de cuenta" @onclick="ToggleDrawer">
+                    <MudAvatar Color="Color.Primary" Size="Size.Small">@if (!string.IsNullOrWhiteSpace(Sesion.Foto)){<img src="@Sesion.Foto" alt="" style="width:100%;height:100%;object-fit:cover;" />}else{@Iniciales}</MudAvatar>
+                </button>
             </Authorized>
             <NotAuthorized>
-                <div class="d-none d-sm-flex align-center gap-3">
+                @* Visibles en todos los tamaños: en pantallas estrechas se compactan (ver navegacion.css). *@
+                <div class="ew-sesion">
                     <MudButton Variant="Variant.Outlined"
                                Href="/login"
                                Class="px-5 py-2 text-none ew-nav-entrar">
-                        Iniciar Sesión
+                        <span class="ew-sesion-largo">Iniciar sesión</span>
+                        <span class="ew-sesion-corto">Entrar</span>
                     </MudButton>
 
                     <MudButton Variant="Variant.Filled"
                                Href="/registro"
                                Class="px-5 py-2 text-none ew-nav-registro">
-                        Registrarse
+                        <span class="ew-sesion-largo">Registrarse</span>
+                        <span class="ew-sesion-corto">Crear cuenta</span>
                     </MudButton>
                 </div>
             </NotAuthorized>
@@ -128,7 +134,8 @@
         <MudIconButton Icon="@Icons.Material.Filled.Menu"
                        Color="Color.Default"
                        Edge="Edge.End"
-                       Class="d-flex d-md-none ml-2 exploreway-hamburger"
+                       Class="d-flex d-md-none ml-1 exploreway-hamburger"
+                       aria-label="Abrir menú"
                        OnClick="@ToggleDrawer" />
     </MudAppBar>
 
@@ -156,7 +163,7 @@
         <MudDivider Class="my-2" />
 
         <MudNavMenu Class="exploreway-mobile-nav py-3">
-            <MudNavLink Href="#inicio" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home" OnClick="@CloseDrawer">
+            <MudNavLink Href="/#inicio" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home" OnClick="@CloseDrawer">
                 Inicio
             </MudNavLink>
 

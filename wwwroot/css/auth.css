@@ -1,0 +1,316 @@
+/* ==========================================================================
+   INICIAR SESIÓN y CREAR CUENTA (prefijo ea-)
+   Escritorio: foto del volcán a la izquierda, formulario sobre papel a la derecha.
+   Móvil: la foto pasa a ser una franja superior y el formulario sube como una hoja.
+   Usa los tokens --ew-* de exploreway.css.
+   ========================================================================== */
+
+.ea-pagina {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--ew-paper);
+}
+
+/* ---------- Panel de foto ---------- */
+.ea-foto {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 2.5rem 3rem;
+    overflow: hidden;
+    color: #fff;
+    background: var(--ew-dark);
+    isolation: isolate;
+}
+
+.ea-foto-img {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 60% 40%;
+}
+
+.ea-foto::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+        linear-gradient(180deg, rgba(11, 19, 41, 0.72) 0%, rgba(11, 19, 41, 0.12) 38%, rgba(11, 19, 41, 0.88) 100%);
+}
+
+.ea-marca {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    align-self: flex-start;
+    color: #fff;
+    text-decoration: none;
+}
+
+.ea-marca svg { width: 38px; height: 38px; flex: none; }
+
+.ea-marca-nombre {
+    font-family: var(--ew-bric, 'Bricolage Grotesque', sans-serif);
+    font-stretch: 80%;
+    font-weight: 800;
+    font-size: 1.55rem;
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+.ea-marca-nombre b { color: var(--ew-mint); font-weight: 800; }
+
+.ea-foto-texto { max-width: 30rem; }
+
+.ea-foto-titulo {
+    margin: 0;
+    font-family: var(--ew-bric, 'Bricolage Grotesque', sans-serif);
+    font-size: clamp(2.2rem, 3.6vw, 3.4rem);
+    font-weight: 700;
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+}
+
+.ea-foto-bajada {
+    margin: 1rem 0 0;
+    max-width: 26rem;
+    font-size: 1.02rem;
+    line-height: 1.65;
+    color: rgba(234, 246, 245, 0.82);
+    text-wrap: pretty;
+}
+
+/* Pie de foto con altitud, como el altímetro del inicio */
+.ea-pie {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin: 0;
+    font-size: 0.88rem;
+    color: rgba(234, 246, 245, 0.8);
+}
+
+.ea-pie b {
+    font-family: var(--ew-mono);
+    font-size: 1.25rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--ew-mint);
+}
+
+/* ---------- Panel del formulario ---------- */
+.ea-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 2rem 3rem;
+}
+
+.ea-volver {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 44px;
+    margin-left: -0.5rem;
+    padding: 0 0.5rem;
+    border-radius: 10px;
+    color: #475569;
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 150ms ease-out;
+}
+
+@media (hover: hover) {
+    .ea-volver:hover { color: var(--ew-green-ink); }
+}
+
+.ea-tarjeta {
+    width: 100%;
+    max-width: 440px;
+    margin: auto 0;
+    padding: 1.5rem 0;
+}
+
+.ea-tarjeta--ancha { max-width: 560px; }
+
+.ea-titulo {
+    margin: 0;
+    font-family: var(--ew-bric, 'Bricolage Grotesque', sans-serif);
+    font-size: clamp(1.9rem, 3vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--ew-ink);
+    text-wrap: balance;
+}
+
+.ea-sub {
+    margin: 0.6rem 0 1.75rem;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #475569;
+    text-wrap: pretty;
+}
+
+.ea-aviso {
+    margin-bottom: 1.25rem;
+    border-radius: 12px;
+}
+
+/* Grupos del registro: separan "Tus datos" de "Tu cuenta" */
+.ea-grupo { margin: 0 0 1.5rem; padding: 0; border: 0; min-width: 0; }
+
+.ea-grupo-titulo {
+    margin: 0 0 0.9rem;
+    padding: 0 0 0.6rem;
+    width: 100%;
+    border-bottom: 1px solid var(--ew-line);
+    font-family: var(--ew-bric, 'Bricolage Grotesque', sans-serif);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ew-ink);
+}
+
+.ea-campos { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ea-campos > .ea-ancho { grid-column: 1 / -1; }
+
+/* ---------- Campos de MudBlazor ---------- */
+.ea-pagina .mud-input-outlined .mud-input-outlined-border {
+    border-radius: 12px;
+    border-color: rgba(11, 19, 41, 0.2);
+    border-width: 1.5px;
+}
+
+.ea-pagina .mud-input.mud-input-outlined {
+    background: #fff;
+    border-radius: 12px;
+}
+
+.ea-pagina .mud-input-outlined:hover:not(.mud-disabled):not(.mud-input-error) .mud-input-outlined-border {
+    border-color: rgba(11, 19, 41, 0.45);
+}
+
+.ea-pagina .mud-input-outlined.mud-focused .mud-input-outlined-border {
+    border-color: var(--ew-primary);
+    border-width: 2px;
+}
+
+.ea-pagina .mud-input-control > .mud-input-control-input-container > .mud-input-label-outlined.mud-input-label-inputcontrol {
+    color: #475569;
+}
+
+.ea-pagina .mud-input > input.mud-input-root-outlined,
+.ea-pagina .mud-input > textarea.mud-input-root-outlined {
+    font-size: 1rem;
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
+
+/* ---------- Acciones ---------- */
+.ea-olvido {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0.35rem 0 1.5rem;
+}
+
+.ea-enlace {
+    color: var(--ew-green-ink) !important;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+@media (hover: hover) {
+    .ea-enlace:hover { text-decoration: underline; }
+}
+
+.ea-boton.mud-button-root {
+    min-height: 52px;
+    border-radius: 14px;
+    background: var(--ew-dark) !important;
+    color: #fff !important;
+    font-family: var(--ew-bric, 'Bricolage Grotesque', sans-serif);
+    font-size: 1.02rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+    box-shadow: none;
+    transition-property: background-color, scale;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+}
+
+.ea-boton.mud-button-root:active:not(:disabled) { scale: 0.98; }
+
+@media (hover: hover) {
+    .ea-boton.mud-button-root:hover:not(:disabled) { background: var(--ew-primary) !important; }
+}
+
+.ea-boton.mud-button-root:disabled { opacity: 0.55; }
+
+.ea-cambio {
+    margin: 1.75rem 0 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--ew-line);
+    text-align: center;
+    font-size: 0.98rem;
+    color: #475569;
+}
+
+.ea-cambio .ea-enlace { margin-left: 0.25rem; }
+
+/* ---------- Móvil y tablet: franja de foto + hoja ---------- */
+@media (max-width: 959.98px) {
+    .ea-pagina {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+        background: var(--ew-dark);
+    }
+
+    .ea-foto {
+        gap: 0;
+        min-height: 188px;
+        padding: 1.25rem 1.25rem 3.25rem;
+    }
+
+    .ea-foto-texto,
+    .ea-pie { display: none; }
+
+    .ea-panel {
+        z-index: 1;
+        margin-top: -1.75rem;
+        padding: 0.75rem 1.25rem 2rem;
+        border-radius: 28px 28px 0 0;
+        background: var(--ew-paper);
+        box-shadow: 0 -12px 32px -16px rgba(11, 19, 41, 0.5);
+    }
+
+    .ea-volver { display: none; }
+
+    .ea-tarjeta { margin: 0; padding: 1.25rem 0 0; max-width: 520px; }
+    .ea-tarjeta--ancha { max-width: 560px; }
+}
+
+@media (max-width: 479.98px) {
+    .ea-campos { grid-template-columns: 1fr; }
+    .ea-titulo { font-size: 1.85rem; }
+    .ea-sub { margin-bottom: 1.5rem; }
+
+    /* 16px evita el zoom automático de iOS al enfocar un campo */
+    .ea-pagina .mud-input > input.mud-input-root-outlined { font-size: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ea-boton.mud-button-root:active:not(:disabled) { scale: 1; }
+}

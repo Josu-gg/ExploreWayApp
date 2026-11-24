@@ -1,0 +1,122 @@
+/* ==========================================================================
+   NAVEGACIÓN EN PANTALLAS ESTRECHAS
+   - Botones de sesión siempre visibles en la barra (antes se ocultaban < 600px).
+   - Cajón lateral oscuro, igual que la barra.
+   No altera el diseño de escritorio ni el del inicio.
+   ========================================================================== */
+
+.ew-sesion {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.ew-sesion-corto { display: none; }
+
+.ew-avatar-movil {
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Tablet estrecha: mismos botones, un poco más compactos */
+@media (max-width: 959.98px) {
+    .ew-sesion { gap: 0.5rem; }
+
+    .ew-sesion .mud-button-root.ew-nav-entrar,
+    .ew-sesion .mud-button-root.ew-nav-registro {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+}
+
+/* Teléfono: "Entrar" siempre; "Crear cuenta" cuando cabe */
+@media (max-width: 599.98px) {
+    .exploreway-appbar { padding-left: 1rem !important; padding-right: 0.5rem !important; }
+
+    .ew-marca-logo { width: 34px; height: 34px; }
+    .ew-marca-nombre { font-size: 1.35rem; }
+
+    .ew-sesion-largo { display: none; }
+    .ew-sesion-corto { display: inline; }
+
+    .ew-sesion .mud-button-root.ew-nav-entrar,
+    .ew-sesion .mud-button-root.ew-nav-registro {
+        min-height: 40px;
+        padding: 0 0.85rem !important;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 479.98px) {
+    /* En 360–479px solo cabe un botón junto a la marca: queda "Entrar"; registrarse está en el cajón. */
+    .ew-sesion .mud-button-root.ew-nav-registro { display: none; }
+}
+
+/* ---------- Cajón móvil ---------- */
+.exploreway-drawer.mud-drawer {
+    --mud-drawer-width: min(86vw, 340px);
+    background: var(--ew-dark);
+    color: var(--ew-luz, #eaf6f5);
+    border-left: 1px solid rgba(91, 227, 194, 0.16);
+}
+
+.exploreway-drawer .mud-drawer-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.exploreway-drawer .mud-typography,
+.exploreway-drawer .mud-icon-root { color: var(--ew-luz, #eaf6f5); }
+
+.exploreway-drawer .mud-divider { border-color: rgba(234, 246, 245, 0.14); }
+
+.exploreway-drawer .exploreway-mobile-nav { flex: 0 0 auto; margin: 0; }
+
+.exploreway-drawer .mud-button-root {
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: var(--ew-bric, 'Bricolage Grotesque', sans-serif);
+    font-weight: 700;
+}
+
+.exploreway-drawer .mud-nav-link {
+    min-height: 48px;
+    border-radius: 12px;
+    color: var(--ew-luz-2, rgba(234, 246, 245, 0.74));
+    font-family: var(--ew-bric, 'Bricolage Grotesque', sans-serif);
+    font-weight: 600;
+}
+
+.exploreway-drawer .mud-nav-link .mud-nav-link-icon { color: var(--ew-mint); }
+
+.exploreway-drawer .mud-nav-link:hover,
+.exploreway-drawer .mud-nav-link.active {
+    background: rgba(91, 227, 194, 0.12);
+    color: #fff;
+}
+
+.exploreway-drawer .mud-button-root.mud-button-outlined {
+    min-height: 48px;
+    border-color: rgba(234, 246, 245, 0.4);
+    color: var(--ew-luz, #eaf6f5);
+    border-radius: 12px !important;
+}
+
+.exploreway-drawer .mud-button-root.exploreway-btn-cta {
+    min-height: 48px;
+    border-radius: 12px !important;
+    background: var(--ew-mint) !important;
+    color: var(--ew-dark) !important;
+    font-weight: 700;
+    box-shadow: none;
+}

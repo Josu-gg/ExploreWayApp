@@ -14,97 +14,50 @@
 
 <PageTitle>Iniciar sesión — ExploreWay</PageTitle>
 
-<div class="exploreway-auth">
+<div class="ea-pagina">
 
-    @* PANEL DE MARCA — LATERAL IZQUIERDO (SOLO ESCRITORIO) *@
-    <aside class="exploreway-auth-brand d-none d-md-flex flex-column justify-space-between pa-10">
-        <div class="exploreway-auth-topo" aria-hidden="true">
-            <svg viewBox="0 0 700 900" preserveAspectRatio="xMidYMid slice">
-                <path class="exploreway-topo-line exploreway-topo-line--mint" style="--i:0" d="M-40,180 C160,120 320,230 520,150 C620,110 680,180 740,140" />
-                <path class="exploreway-topo-line exploreway-topo-line--sky" style="--i:1" d="M-40,420 C180,360 340,470 540,390 C640,350 690,420 760,380" />
-                <path class="exploreway-topo-line exploreway-topo-line--mint" style="--i:2" d="M-40,660 C200,610 360,700 560,630 C650,600 700,660 760,620" />
+    <aside class="ea-foto">
+        <img class="ea-foto-img" src="/img/santa-ana.jpg" alt="" />
+        <a href="/" class="ea-marca" aria-label="ExploreWay, ir al inicio">
+            <svg viewBox="0 0 40 40" aria-hidden="true">
+                <rect x="1" y="1" width="38" height="38" rx="11" fill="#0b1329" stroke="#5BE3C2" stroke-opacity=".45" />
+                <path d="M6 27 L16 11 L21 19 L25 14 L34 27 Z" fill="#5BE3C2" />
+                <path d="M6 31 q3.5 -3 7 0 t7 0 t7 0 t7 0" fill="none" stroke="#5BBAE3" stroke-width="2.2" stroke-linecap="round" />
             </svg>
+            <span class="ea-marca-nombre">Explore<b>Way</b></span>
+        </a>
+        <div class="ea-foto-texto">
+            <h2 class="ea-foto-titulo">Tu próxima salida te espera.</h2>
+            <p class="ea-foto-bajada">Entrá para ver tus reservas y elegir con quién explorar el próximo volcán, lago o arrecife.</p>
         </div>
-
-        <div class="d-flex align-center gap-3">
-            <div class="exploreway-auth-logo">
-                <MudIcon Icon="@Icons.Material.Filled.Explore" Size="Size.Medium" />
-            </div>
-            <MudText Typo="Typo.h5" Class="font-weight-bold text-white" Style="letter-spacing: 0.5px;">
-                Explore<span style="color: var(--ew-mint);">Way</span>
-            </MudText>
-        </div>
-
-        <div>
-            <MudText Typo="Typo.h3" Class="exploreway-auth-headline text-white font-weight-bold mb-4">
-                Tu próxima<br />
-                <span class="exploreway-gradient-text">aventura</span> comienza aquí.
-            </MudText>
-
-            <MudText Typo="Typo.body1" Class="exploreway-auth-sub mb-8">
-                Iniciá sesión para gestionar tus reservas, descubrir destinos increíbles
-                y vivir experiencias únicas alrededor del mundo.
-            </MudText>
-
-            <div class="d-flex flex-column gap-4">
-                @foreach (var (codigo, beneficio) in _beneficios)
-                {
-                    <div class="exploreway-auth-stamp">
-                        <span class="exploreway-auth-stamp-code">@codigo</span>
-                        <MudText Typo="Typo.body2" Class="exploreway-auth-benefit">@beneficio</MudText>
-                    </div>
-                }
-            </div>
-        </div>
-
-        <MudText Typo="Typo.caption" Class="exploreway-auth-copy">
-            © @DateTime.Now.Year ExploreWay · Todos los derechos reservados
-        </MudText>
+        <p class="ea-pie"><b>2 381 m</b> Volcán de Santa Ana</p>
     </aside>
 
-    @* PANEL DEL FORMULARIO — LATERAL DERECHO *@
-    <main class="exploreway-auth-panel d-flex align-center justify-center">
-        <a href="/" class="exploreway-auth-back d-none d-md-inline-flex">
+    <main class="ea-panel">
+        <a href="/" class="ea-volver">
             <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
             Volver al inicio
         </a>
 
-        <div class="exploreway-auth-card">
-
-            @* LOGOTIPO SOLO EN MÓVIL *@
-            <div class="d-flex d-md-none align-center justify-center gap-2 mb-8">
-                <MudIcon Icon="@Icons.Material.Filled.Explore" Style="color: var(--ew-primary);" />
-                <MudText Typo="Typo.h5" Class="font-weight-bold">
-                    Explore<span style="color: var(--ew-primary);">Way</span>
-                </MudText>
-            </div>
-
-            <div class="exploreway-auth-accent"></div>
-
-            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1" Style="color: #0f172a;">
-                Bienvenido de nuevo
-            </MudText>
-            <MudText Typo="Typo.body1" Class="mb-8" Style="color: #475569;">
-                Ingresá tus credenciales para continuar con tu cuenta.
-            </MudText>
+        <div class="ea-tarjeta">
+            <h1 class="ea-titulo">Iniciar sesión</h1>
+            <p class="ea-sub">Ingresá con tu correo y contraseña para continuar.</p>
 
             @if (error is not null)
             {
-                <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4" Style="border-radius: 12px;">
-                    @error
-                </MudAlert>
+                <MudAlert Severity="Severity.Error" Dense="true" Class="ea-aviso">@error</MudAlert>
             }
 
-            <MudForm @ref="_formulario" class="d-flex flex-column">
+            <MudForm @ref="_formulario">
                 <MudTextField T="string"
                               Label="Correo electrónico"
                               Placeholder="tu@correo.com"
                               Variant="Variant.Outlined"
                               Margin="Margin.None"
-                              Class="mb-5"
+                              Class="mb-4"
                               Adornment="Adornment.Start"
                               AdornmentIcon="@Icons.Material.Filled.Email"
-                              AdornmentColor="Color.Primary"
+                              InputType="InputType.Email"
                               autocomplete="username"
                               @bind-Value="credenciales.Correo"
                               Validation="ValidarCorreo" />
@@ -113,25 +66,23 @@
                               Label="Contraseña"
                               Variant="Variant.Outlined"
                               Margin="Margin.None"
-                              Class="mb-1"
                               Adornment="Adornment.End"
                               AdornmentIcon="@(_verContra ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
-                              AdornmentColor="Color.Primary"
-                              AdornmentAriaLabel="Mostrar u ocultar la contraseña"
+                              AdornmentAriaLabel="@(_verContra ? "Ocultar contraseña" : "Mostrar contraseña")"
                               OnAdornmentClick="AlternarContra"
                               InputType="@(_verContra ? InputType.Text : InputType.Password)"
                               autocomplete="current-password"
                               @bind-Value="credenciales.Contra"
-                              Validation="ValidarContra" />
+                              Validation="ValidarContra"
+                              OnKeyDown="AlPulsarTecla" />
 
-                <div class="d-flex justify-end mb-6">
-                    <MudLink Href="#" Typo="Typo.body2" Class="exploreway-auth-link">¿Olvidaste tu contraseña?</MudLink>
+                <div class="ea-olvido">
+                    <MudLink Href="#" Typo="Typo.body2" Class="ea-enlace">¿Olvidaste tu contraseña?</MudLink>
                 </div>
 
                 <MudButton Variant="Variant.Filled"
-                           Size="Size.Large"
                            FullWidth="true"
-                           Class="rounded-pill py-3 text-none exploreway-btn-auth"
+                           Class="ea-boton"
                            Disabled="enviando"
                            OnClick="EnviarAsync">
                     @if (enviando)
@@ -142,12 +93,10 @@
                 </MudButton>
             </MudForm>
 
-            <MudDivider Class="my-8" />
-
-            <MudText Typo="Typo.body1" Class="text-center" Style="color: #475569;">
+            <p class="ea-cambio">
                 ¿Todavía no tenés cuenta?
-                <MudLink Href="@RutaRegistro" Class="exploreway-auth-link font-weight-bold">Registrate gratis</MudLink>
-            </MudText>
+                <MudLink Href="@RutaRegistro" Class="ea-enlace">Crear cuenta</MudLink>
+            </p>
         </div>
     </main>
 </div>
@@ -170,13 +119,6 @@
             ? ReturnUrl
             : "/";
 
-    private static readonly (string Codigo, string Texto)[] _beneficios =
-    [
-        ("WP-01", "Reservás expediciones y paquetes turísticos al instante"),
-        ("WP-02", "Explorás destinos con guías certificados y verificados"),
-        ("WP-03", "Gestionás tu itinerario desde cualquier dispositivo")
-    ];
-
     private Func<string, string?> ValidarCorreo => valor =>
     {
         if (string.IsNullOrWhiteSpace(valor)) return "El correo es obligatorio.";
@@ -188,6 +130,11 @@
         string.IsNullOrWhiteSpace(valor) ? "La contraseña es obligatoria." : null;
 
     private void AlternarContra() => _verContra = !_verContra;
+
+    private async Task AlPulsarTecla(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await EnviarAsync();
+    }
 
     private async Task EnviarAsync()
     {

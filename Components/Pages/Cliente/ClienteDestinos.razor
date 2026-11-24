@@ -88,7 +88,6 @@
             else if (Filtrados.Any())
             {
                 var lista = Filtrados.ToList();
-                var hayFiltro = !string.IsNullOrWhiteSpace(_busqueda) || _depto is not null;
 
                 <p class="ex-conteo" aria-live="polite">@lista.Count @(lista.Count == 1 ? "destino" : "destinos")</p>
 
@@ -97,8 +96,7 @@
                     {
                         var d = lista[i];
                         var ofertas = _ofertas.TryGetValue(d.IdDestino, out var of) ? of : [];
-                        var destacada = i == 0 && !hayFiltro && lista.Count >= 4;
-                        <a class="ex-tarjeta @(destacada ? "ex-tarjeta--destacada" : "")" style="--i:@i" href="/explorar/@d.IdDestino">
+                        <a class="ex-tarjeta" style="--i:@i" href="/explorar/@d.IdDestino">
                             <div class="ex-tarjeta-media">
                                 @if (_imagenes.TryGetValue(d.IdDestino, out var url) && !string.IsNullOrWhiteSpace(url))
                                 {

@@ -7,7 +7,7 @@
 <PageTitle>Nosotros — ExploreWay</PageTitle>
 
 <div class="ex-pagina">
-    <header class="ex-cabecera">
+    <header class="ex-cabecera ns-cabecera">
         <div class="ex-contenedor">
             <h1 class="ex-titulo">Nosotros</h1>
             <p class="ex-bajada">
@@ -16,21 +16,45 @@
         </div>
     </header>
 
-    <div class="ex-cuerpo">
+    <div class="ex-cuerpo ns-cuerpo">
         <div class="ex-contenedor">
-            <section class="ns-bloque ns-que" aria-labelledby="ns-que">
-                <h2 id="ns-que" class="ns-subtitulo">Qué es ExploreWay</h2>
-                <p>
-                    Es una plataforma de turismo para descubrir destinos y las actividades que se pueden hacer en cada uno.
-                    Cada actividad la acompaña un guía local, así que no reservás un paquete genérico: reservás una salida con una persona concreta.
-                </p>
-                <p>
-                    Podés recorrer los destinos, ver precios y guías sin crear una cuenta. La cuenta solo hace falta para reservar.
-                </p>
+
+            @* QUÉ ES: una foto y dos ideas separadas, cada una con su título *@
+            <section class="ns-que" aria-labelledby="ns-que">
+                <figure class="ns-foto">
+                    <img src="/img/santa-ana.jpg" alt="Cráter y laguna del Volcán de Santa Ana" loading="lazy" />
+                    <figcaption>Volcán de Santa Ana, 2 381 m</figcaption>
+                </figure>
+
+                <div class="ns-que-texto">
+                    <h2 id="ns-que" class="ns-titulo">Qué es ExploreWay</h2>
+
+                    <article class="ns-idea">
+                        <span class="ns-idea-icono" aria-hidden="true"><MudIcon Icon="@Icons.Material.Outlined.Hiking" /></span>
+                        <div>
+                            <h3>Una salida con una persona concreta</h3>
+                            <p>
+                                Es una plataforma de turismo para descubrir destinos y las actividades que se pueden hacer en cada uno.
+                                Cada actividad la acompaña un guía local: no reservás un paquete genérico, reservás una salida con alguien que conoce el lugar.
+                            </p>
+                        </div>
+                    </article>
+
+                    <article class="ns-idea">
+                        <span class="ns-idea-icono" aria-hidden="true"><MudIcon Icon="@Icons.Material.Outlined.Visibility" /></span>
+                        <div>
+                            <h3>Mirá primero, registrate después</h3>
+                            <p>
+                                Podés recorrer los destinos, ver precios y conocer a los guías sin crear una cuenta. La cuenta solo hace falta para reservar.
+                            </p>
+                        </div>
+                    </article>
+                </div>
             </section>
 
-            <section class="ns-bloque" aria-labelledby="ns-como">
-                <h2 id="ns-como" class="ns-subtitulo">Cómo funciona</h2>
+            @* CÓMO FUNCIONA: sí es una secuencia, por eso van numerados *@
+            <section class="ns-seccion" aria-labelledby="ns-como">
+                <h2 id="ns-como" class="ns-titulo">Cómo funciona</h2>
                 <ol class="ns-pasos">
                     <li class="ns-paso">
                         <span class="ns-paso-num" aria-hidden="true">1</span>
@@ -55,16 +79,16 @@
                 </ol>
             </section>
 
-            <section class="ns-bloque" aria-labelledby="ns-quien">
-                <h2 id="ns-quien" class="ns-subtitulo">Para quién es</h2>
+            <section class="ns-seccion" aria-labelledby="ns-quien">
+                <h2 id="ns-quien" class="ns-titulo">Para quién es</h2>
                 <div class="ns-perfiles">
                     <article class="ns-perfil">
-                        <MudIcon Icon="@Icons.Material.Outlined.Backpack" Class="ns-perfil-icono" />
+                        <span class="ns-perfil-icono" aria-hidden="true"><MudIcon Icon="@Icons.Material.Outlined.Backpack" /></span>
                         <h3>Viajeros</h3>
                         <p>Para quienes quieren conocer un lugar de la mano de alguien que vive ahí, con la información clara antes de reservar.</p>
                     </article>
-                    <article class="ns-perfil">
-                        <MudIcon Icon="@Icons.Material.Outlined.Badge" Class="ns-perfil-icono" />
+                    <article class="ns-perfil ns-perfil--oscuro">
+                        <span class="ns-perfil-icono" aria-hidden="true"><MudIcon Icon="@Icons.Material.Outlined.Badge" /></span>
                         <h3>Guías locales</h3>
                         <p>Para guías que ofrecen actividades en su destino y quieren recibir y confirmar reservas desde un solo panel.</p>
                     </article>
